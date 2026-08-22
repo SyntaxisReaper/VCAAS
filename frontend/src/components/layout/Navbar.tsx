@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, User, Settings, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/components/providers/AuthProvider'
 
 const NAV_LINKS = [
   { label: 'Dashboard',  href: '/dashboard'  },
@@ -22,7 +22,7 @@ export function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const pathname  = usePathname()
   const router    = useRouter()
-  const { user, isAuthenticated, loading, signOut } = useAuth()
+  const { user, isAuthenticated, loading, signOut } = useAuthContext()
 
   /* ── Scroll shadow ─────────────────────────────── */
   useEffect(() => {
