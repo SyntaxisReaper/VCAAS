@@ -170,7 +170,7 @@ class WatermarkEncoder:
         return full_payload
     
     def _spread_spectrum_embed(self, audio: np.ndarray, payload: bytes) -> np.ndarray:
-        """Embed payload using Echo Hiding for robust extraction."""
+        """Embed payload using Echo Hiding for robust extraction with repetition."""
         # Convert payload to bits
         payload_with_marker = payload + b'\xff\x00'
         binary_payload = ''.join(format(b, '08b') for b in payload_with_marker)
@@ -182,37 +182,38 @@ class WatermarkEncoder:
         alpha = 0.5  # Echo amplitude
         
         # Segment audio to embed bits
-        # Dynamically size segments so the entire payload fits
-        max_segment = int(0.1 * self.sample_rate)  # 100ms max
-        min_segment = int(0.04 * self.sample_rate) # 40ms min to contain the 25ms delay
+        # Use a fixed segment length for each bit to allow repetition (e.g. 50ms)
+        segment_length = int(0.05 * self.sample_rate)
         
         required_bits = len(binary_payload)
-        segment_length = len(audio) // required_bits
-        
-        # Clamp to reasonable values
-        segment_length = max(min_segment, min(segment_length, max_segment))
+        watermark_duration = required_bits * segment_length
         
         watermarked_audio = audio.copy()
         
-        for i, bit in enumerate(binary_payload):
-            start = i * segment_length
-            end = start + segment_length
+        # Repeat the payload across the audio
+        num_repeats = max(1, len(audio) // watermark_duration)
+        
+        for repeat_idx in range(num_repeats):
+            offset = repeat_idx * watermark_duration
             
-            if end > len(audio):
-                logger.warning("Audio too short to embed full payload")
-                break
+            for i, bit in enumerate(binary_payload):
+                start = offset + i * segment_length
+                end = start + segment_length
                 
-            delay = delay_1 if bit == '1' else delay_0
-            
-            # Embed echo in this segment
-            segment = audio[start:end]
-            echo = np.zeros_like(segment)
-            if delay < len(segment):
-                echo[delay:] = segment[:-delay]
+                if end > len(audio):
+                    break
+                    
+                delay = delay_1 if bit == '1' else delay_0
                 
-            # Add echo to original audio
-            watermarked_audio[start:end] = segment + alpha * echo
-            
+                # Embed echo in this segment
+                segment = audio[start:end]
+                echo = np.zeros_like(segment)
+                if delay < len(segment):
+                    echo[delay:] = segment[:-delay]
+                    
+                # Add echo to original audio
+                watermarked_audio[start:end] = segment + alpha * echo
+                
         return np.clip(watermarked_audio, -0.99, 0.99)
 
 
@@ -278,7 +279,7 @@ class WatermarkDecoder:
     
     def detect_robust_watermark(self, audio_path: str) -> Optional[Dict[str, Any]]:
         """
-        Detect robust spread-spectrum watermark.
+        Detect robust spread-spectrum watermark with repetition support.
         
         Args:
             audio_path: Path to audio file to analyze
@@ -290,11 +291,10 @@ class WatermarkDecoder:
             # Load audio
             audio, sr = librosa.load(audio_path, sr=self.sample_rate)
             
-            # Extract payload using Echo Hiding
-            payload = self._spread_spectrum_extract(audio)
+            # Extract all candidate payloads using Echo Hiding
+            payloads = self._spread_spectrum_extract(audio)
             
-            if payload:
-                # Payload for robust is now simply the 16-char UTF-8 string
+            for payload in payloads:
                 try:
                     watermark_id = payload.decode('utf-8')
                     # Validate that it looks like a hex string
@@ -311,15 +311,11 @@ class WatermarkDecoder:
                                 'confidence': 1.0,
                                 'detection_method': 'robust_echo_hiding'
                             }
-                        else:
-                            print(f"Robust Detection: Invalid chars decoded: {watermark_id}")
-                    else:
-                        print(f"Robust Detection: Payload too short: {watermark_id}")
-                except Exception as e:
-                    print(f"Robust Detection: Decode error: {e}")
-            else:
-                print("Robust Detection: Echo Hiding extraction returned None")
-            
+                except Exception:
+                    # Ignore decode errors for this candidate and try the next one
+                    continue
+                    
+            print("Robust Detection: No valid watermark found in any candidate payloads")
             return {'found': False, 'confidence': 0.0}
             
         except Exception as e:
@@ -376,23 +372,16 @@ class WatermarkDecoder:
         except Exception:
             return "unknown_id"
     
-    def _spread_spectrum_extract(self, audio: np.ndarray) -> Optional[bytes]:
-        """Extract payload from Echo Hiding watermark using cepstrum analysis."""
+    def _spread_spectrum_extract(self, audio: np.ndarray) -> list[bytes]:
+        """Extract all candidate payloads from Echo Hiding watermark using cepstrum analysis."""
         try:
             delay_0 = int(0.020 * self.sample_rate)
             delay_1 = int(0.025 * self.sample_rate)
-            # Predict the payload size
-            # We know it's 16 bytes payload + 2 bytes marker = 18 bytes = 144 bits
-            # If the segment length was dynamic, we just re-compute it here
-            expected_bits = (16 + 2) * 8
-            max_segment = int(0.1 * self.sample_rate)
-            min_segment = int(0.04 * self.sample_rate)
             
-            segment_length = len(audio) // expected_bits
-            segment_length = max(min_segment, min(segment_length, max_segment))
+            # The segment length is fixed in embedding
+            segment_length = int(0.05 * self.sample_rate)
             
-            # Predict bounds
-            max_bits = min(expected_bits, len(audio) // segment_length)
+            max_bits = len(audio) // segment_length
             
             binary_payload = ""
             for i in range(max_bits):
@@ -400,13 +389,15 @@ class WatermarkDecoder:
                 end = start + segment_length
                 segment = audio[start:end]
                 
+                if len(segment) < segment_length:
+                    break
+                
                 # Compute real cepstrum
                 spectrum = np.fft.fft(segment)
                 log_spectrum = np.log(np.abs(spectrum) + 1e-10)
                 cepstrum = np.real(np.fft.ifft(log_spectrum))
                 
                 # Check for peaks near delay_0 and delay_1
-                # allow margin of error (+-1 sample)
                 peak_0 = max(cepstrum[delay_0-1:delay_0+2])
                 peak_1 = max(cepstrum[delay_1-1:delay_1+2])
                 
@@ -415,25 +406,19 @@ class WatermarkDecoder:
                 else:
                     binary_payload += '0'
                     
-            # Try to decode bytes
             byte_array = bytearray()
             for i in range(0, len(binary_payload) - 7, 8):
                 byte_str = binary_payload[i:i+8]
                 byte_val = int(byte_str, 2)
                 byte_array.append(byte_val)
                 
-                # Check for marker
-                if len(byte_array) >= 2 and byte_array[-2:] == bytearray([255, 0]):
-                    return bytes(byte_array[:-2])
-                    
-            # If the json is too big, it truncated. We will try returning it to see.
-            if len(byte_array) > 50:
-                print(f"DEBUG Echo Hiding: First 50 = {byte_array[:50]}")
-            return bytes(byte_array)
+            # Split byte array by the marker \xff\x00 to get all candidate payloads
+            candidates = byte_array.split(b'\xff\x00')
+            return [bytes(c) for c in candidates if c]
             
         except Exception as e:
             logger.error(f"Echo Hiding extraction error: {e}")
-            return None
+            return []
     
     def _verify_and_parse_payload(self, payload: bytes) -> Optional[Dict[str, Any]]:
         """Verify HMAC signature and parse payload from padded byte array."""
