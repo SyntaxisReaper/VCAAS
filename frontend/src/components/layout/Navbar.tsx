@@ -47,9 +47,9 @@ export function Navbar() {
             <Image
               src="/logo.png"
               alt="VCaaS"
-              width={36}
-              height={36}
-              style={{ borderRadius: 6 }}
+              width={44}
+              height={44}
+              style={{ borderRadius: 8 }}
               priority
             />
             <span

@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
 import {
@@ -916,18 +917,13 @@ export default function HomePage() {
               style={{ textDecoration: 'none' }}
               aria-label="VCaaS home"
             >
-              <span
-                style={{
-                  width: 24, height: 24,
-                  background: 'var(--accent)',
-                  borderRadius: 5,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Zap size={12} color="#fff" strokeWidth={2.5} />
-              </span>
+              <Image
+                src="/logo.png"
+                alt="VCaaS"
+                width={32}
+                height={32}
+                style={{ borderRadius: 6 }}
+              />
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', letterSpacing: '-0.02em' }}>
                 VCaaS
               </span>
