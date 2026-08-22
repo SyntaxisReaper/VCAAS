@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, Menu, X, ChevronDown } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 
 const NAV_LINKS = [
   { label: 'Dashboard',  href: '/dashboard'  },
@@ -43,16 +44,14 @@ export function Navbar() {
             className="flex items-center gap-2 shrink-0"
             aria-label="VCaaS home"
           >
-            <span
-              className="flex items-center justify-center rounded-md"
-              style={{
-                width: 28, height: 28,
-                background: 'var(--accent)',
-                borderRadius: 6,
-              }}
-            >
-              <Zap size={14} color="#fff" strokeWidth={2.5} />
-            </span>
+            <Image
+              src="/logo.png"
+              alt="VCaaS"
+              width={36}
+              height={36}
+              style={{ borderRadius: 6 }}
+              priority
+            />
             <span
               style={{
                 fontSize: 15,
@@ -97,7 +96,7 @@ export function Navbar() {
           {/* ── Right Actions ────────────────────── */}
           <div className="hidden md:flex items-center gap-2 ml-auto">
             <Link
-              href="/auth/login"
+              href="/login"
               id="nav-sign-in"
               style={{
                 fontSize: 14,
@@ -113,7 +112,7 @@ export function Navbar() {
             >
               Sign in
             </Link>
-            <Link href="/auth/signup" id="nav-get-started" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>
+            <Link href="/signup" id="nav-get-started" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>
               Get Started
             </Link>
           </div>
@@ -185,10 +184,10 @@ export function Navbar() {
               <div style={{ height: 1, background: 'var(--border)', margin: '8px 0' }} />
 
               <div className="flex flex-col gap-2">
-                <Link href="/auth/login" className="btn btn-secondary" style={{ justifyContent: 'center' }}>
+                <Link href="/login" className="btn btn-secondary" style={{ justifyContent: 'center' }}>
                   Sign in
                 </Link>
-                <Link href="/auth/signup" className="btn btn-primary" style={{ justifyContent: 'center' }}>
+                <Link href="/signup" className="btn btn-primary" style={{ justifyContent: 'center' }}>
                   Get Started
                 </Link>
               </div>
