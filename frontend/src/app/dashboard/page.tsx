@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { 
@@ -19,13 +19,56 @@ import {
 
 export default function DashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('7d')
+  const [isLoading, setIsLoading] = useState(true)
+  const [statsData, setStatsData] = useState<any>(null)
+  const [recentVoices, setRecentVoices] = useState<any[]>([])
+  const [recentActivity, setRecentActivity] = useState<any[]>([])
 
-  // Mock data - replace with real API calls
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { getDashboardStats, getTrainedVoices, getTTSJobs } = await import('@/lib/api')
+        const [statsRes, voicesRes, jobsRes] = await Promise.all([
+          getDashboardStats().catch(() => null),
+          getTrainedVoices().catch(() => []),
+          getTTSJobs().catch(() => [])
+        ])
+
+        if (statsRes) setStatsData(statsRes)
+        if (voicesRes && Array.isArray(voicesRes)) {
+          const mappedVoices = voicesRes.slice(0, 4).map((v: any) => ({
+            id: v.id,
+            name: v.name,
+            status: v.status === 'ready' ? 'Ready' : (v.status || 'Processing'),
+            createdAt: new Date(v.created_at).toLocaleDateString(),
+            usage: v.usage_count || 0
+          }))
+          setRecentVoices(mappedVoices)
+        }
+        if (jobsRes && Array.isArray(jobsRes)) {
+          const activity = jobsRes.slice(0, 4).map((job: any) => ({
+            id: job.id,
+            action: job.status === 'completed' ? 'Voice generated' : 'Voice generating',
+            voice: job.voice_name || 'Unknown Voice',
+            time: new Date(job.created_at).toLocaleDateString(),
+            icon: Volume2
+          }))
+          setRecentActivity(activity)
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
   const stats = [
     { 
       title: 'Total Voices', 
-      value: '12', 
-      change: '+2 this week',
+      value: statsData?.total_voices ?? '0', 
+      change: '+0 this week',
       icon: Mic,
       color: 'text-purple-400',
       bg: 'bg-purple-500/10',
@@ -33,8 +76,8 @@ export default function DashboardPage() {
     },
     { 
       title: 'Audio Generated', 
-      value: '1.2K', 
-      change: '+18% vs last week',
+      value: `${statsData?.total_generations ?? '0'}`, 
+      change: 'Recent updates',
       icon: Volume2,
       color: 'text-blue-400',
       bg: 'bg-blue-500/10',
@@ -42,36 +85,22 @@ export default function DashboardPage() {
     },
     { 
       title: 'API Calls', 
-      value: '8.7K', 
-      change: '+24% vs last week',
+      value: `${statsData?.api_calls ?? '0'}`, 
+      change: 'Total requests',
       icon: Zap,
       color: 'text-yellow-400',
       bg: 'bg-yellow-500/10',
       trend: 'up'
     },
     { 
-      title: 'Revenue', 
-      value: '$342', 
-      change: '+12% vs last week',
+      title: 'Storage Used', 
+      value: `${statsData?.storage_used_mb ?? '0'} MB`, 
+      change: 'Available quota',
       icon: TrendingUp,
       color: 'text-emerald-400',
       bg: 'bg-emerald-500/10',
       trend: 'up'
     }
-  ]
-
-  const recentVoices = [
-    { id: 1, name: 'Professional Narrator', status: 'Ready', createdAt: '2024-01-15', usage: 145 },
-    { id: 2, name: 'Casual Friend', status: 'Training', createdAt: '2024-01-14', usage: 89 },
-    { id: 3, name: 'News Anchor', status: 'Ready', createdAt: '2024-01-12', usage: 267 },
-    { id: 4, name: 'Character Voice', status: 'Ready', createdAt: '2024-01-10', usage: 156 }
-  ]
-
-  const recentActivity = [
-    { id: 1, action: 'Voice generated', voice: 'Professional Narrator', time: '2 hours ago', icon: Volume2 },
-    { id: 2, action: 'New voice created', voice: 'Casual Friend', time: '1 day ago', icon: Plus },
-    { id: 3, action: 'API key generated', voice: null, time: '2 days ago', icon: Shield },
-    { id: 4, action: 'License purchased', voice: 'News Anchor', time: '3 days ago', icon: Star }
   ]
 
   return (
