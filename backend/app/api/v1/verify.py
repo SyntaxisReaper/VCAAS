@@ -311,6 +311,159 @@ async def spectral_graphs(file: UploadFile = File(...)):
         except Exception: pass
 
 
+@router.post("/full-analysis")
+async def full_analysis(
+    file: UploadFile = File(...),
+    reference: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    6-Layer Defense Mechanism Orchestrator.
+    Runs all 6 defense layers and computes a weighted authenticity verdict.
+    """
+    if not current_user.is_premium:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Full 6-layer analysis requires premium subscription"
+        )
+
+    import tempfile, os
+    from ...services.prosody_service import ProsodyService
+    from ...services.paralinguistic_service import ParalinguisticService
+    from ...services.semantic_service import SemanticService
+
+    try:
+        # Save sample
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as f:
+            sample_path = f.name
+            f.write(await file.read())
+            
+        # Save reference if provided
+        ref_path = None
+        if reference:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(reference.filename)[1]) as f_ref:
+                ref_path = f_ref.name
+                f_ref.write(await reference.read())
+
+        results = {}
+        weights = {}
+
+        # Layer 1: Anti-Spoof (Acoustic Artifacts)
+        try:
+            antispoof = AntiSpoofDetector().detect(sample_path)
+            # detect() returns spoof_score, we want authenticity
+            auth_l1 = max(0.0, 1.0 - antispoof.get("spoof_score", 0.5))
+            results["layer1_antispoof"] = antispoof
+            weights["l1"] = {"score": auth_l1, "weight": 0.20}
+        except Exception as e:
+            results["layer1_antispoof"] = {"error": str(e)}
+
+        # Layer 2: Speaker Verification (Identity Consistency)
+        if ref_path:
+            try:
+                spk_verify = SpeakerVerifier().verify(ref_path, sample_path)
+                auth_l2 = spk_verify.get("similarity_score", 0.0)
+                results["layer2_speaker"] = spk_verify
+                weights["l2"] = {"score": auth_l2, "weight": 0.15}
+            except Exception as e:
+                results["layer2_speaker"] = {"error": str(e)}
+        else:
+            results["layer2_speaker"] = {"status": "skipped", "reason": "No reference audio provided"}
+
+        # Layer 3: Prosody Coherence
+        try:
+            prosody = ProsodyService().analyse(sample_path)
+            auth_l3 = prosody.get("authenticity_score", 0.5)
+            results["layer3_prosody"] = prosody
+            weights["l3"] = {"score": auth_l3, "weight": 0.15}
+        except Exception as e:
+            results["layer3_prosody"] = {"error": str(e)}
+
+        # Layer 4: Paralinguistic Coherence
+        try:
+            paralinguistic = ParalinguisticService().analyse(sample_path)
+            auth_l4 = paralinguistic.get("authenticity_score", 0.5)
+            results["layer4_paralinguistic"] = paralinguistic
+            weights["l4"] = {"score": auth_l4, "weight": 0.10}
+        except Exception as e:
+            results["layer4_paralinguistic"] = {"error": str(e)}
+
+        # Layer 5: Semantic Alignment
+        try:
+            semantic = SemanticService().analyse(sample_path)
+            auth_l5 = semantic.get("authenticity_score", 0.5)
+            results["layer5_semantic"] = semantic
+            weights["l5"] = {"score": auth_l5, "weight": 0.20}
+        except Exception as e:
+            results["layer5_semantic"] = {"error": str(e)}
+
+        # Layer 6: Watermark
+        try:
+            watermark = await WatermarkService().detect_watermark(sample_path, method=None)
+            results["layer6_watermark"] = watermark
+            # Watermark found = synthetic (authenticity = 0.0)
+            # Not found = authentic (authenticity = 1.0)
+            auth_l6 = 0.0 if watermark.get("found", False) else 1.0
+            weights["l6"] = {"score": auth_l6, "weight": 0.20}
+        except Exception as e:
+            results["layer6_watermark"] = {"error": str(e)}
+
+        # Calculate final weighted authenticity score
+        total_weight = sum(w["weight"] for w in weights.values())
+        if total_weight > 0:
+            final_authenticity = sum(w["score"] * w["weight"] for w in weights.values()) / total_weight
+        else:
+            final_authenticity = 0.5
+
+        if final_authenticity > 0.8:
+            verdict = "Authentic (Human)"
+        elif final_authenticity > 0.5:
+            verdict = "Suspicious (Likely Human)"
+        elif final_authenticity > 0.2:
+            verdict = "Suspicious (Likely Synthetic)"
+        else:
+            verdict = "Deepfake (Synthetic)"
+
+        # Definite synthetic override if watermark is found
+        if results.get("layer6_watermark", {}).get("found", False):
+            verdict = "Deepfake (Watermarked Synthetic)"
+            final_authenticity = 0.0
+
+        def sanitize_numpy(obj):
+            if isinstance(obj, dict):
+                return {k: sanitize_numpy(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [sanitize_numpy(v) for v in obj]
+            elif isinstance(obj, tuple):
+                return tuple(sanitize_numpy(v) for v in obj)
+            elif hasattr(obj, 'item') and not isinstance(obj, (dict, list, tuple)):
+                return obj.item()
+            elif isinstance(obj, np.ndarray):
+                return sanitize_numpy(obj.tolist())
+            elif isinstance(obj, (float, np.float32, np.float64)):
+                if np.isnan(obj) or np.isinf(obj): return 0.0
+            return obj
+
+        response = {
+            "analysis_id": f"full_{uuid.uuid4().hex[:12]}",
+            "overall_authenticity_score": round(final_authenticity, 4),
+            "verdict": verdict,
+            "layers": results,
+            "weights_used": weights,
+            "analyzed_at": datetime.utcnow().isoformat()
+        }
+
+        return sanitize_numpy(response)
+
+    finally:
+        try:
+            if 'sample_path' in locals() and os.path.exists(sample_path): os.unlink(sample_path)
+            if 'ref_path' in locals() and ref_path and os.path.exists(ref_path): os.unlink(ref_path)
+        except Exception:
+            pass
+
+
 @router.get("/history")
 async def get_verification_history(
     limit: int = 20,

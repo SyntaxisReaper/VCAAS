@@ -59,6 +59,7 @@ sentry-sdk[fastapi]==1.38.0
 
 # Speaker verification / anti-spoof (optional, enables ECAPA)
 speechbrain==0.5.16
+faster-whisper>=0.10.0
 
 # Development and testing
 pytest==7.4.3
