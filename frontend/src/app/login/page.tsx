@@ -10,14 +10,14 @@ import { motion } from 'framer-motion'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  const { signInWithGoogle, user, loading: authLoading } = useAuth()
+  const { signInWithGoogle, signInWithEmail, user, loading: authLoading } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,24 +25,28 @@ export default function LoginPage() {
     setError('')
 
     try {
-      console.log('Login attempt:', formData)
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('vcaas_user')
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored)
-            // Ideally verify password here, but mock for now
-          } catch(e) {}
+      const result = await signInWithEmail(formData.email, formData.password)
+
+      if (!result.success) {
+        // Map Firebase error codes to friendly messages
+        const msg = result.error || ''
+        if (msg.includes('invalid-credential') || msg.includes('wrong-password') || msg.includes('user-not-found')) {
+          throw new Error('Incorrect email or password. Please try again.')
+        } else if (msg.includes('too-many-requests')) {
+          throw new Error('Too many failed attempts. Please wait a moment before trying again.')
+        } else if (msg.includes('user-disabled')) {
+          throw new Error('This account has been disabled. Please contact support.')
         } else {
-          // If no user exists in local storage, create a mock one for this login
-          localStorage.setItem('vcaas_user', JSON.stringify({
-            name: formData.username,
-            email: formData.username + '@example.com',
-            username: formData.username
-          }))
+          throw new Error(msg || 'Login failed. Please try again.')
         }
       }
-      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('vcaas_user', JSON.stringify({
+          name: result.user?.displayName || formData.email,
+          email: result.user?.email || formData.email,
+        }))
+      }
       router.push('/dashboard')
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.')
@@ -52,10 +56,7 @@ export default function LoginPage() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+    setFormData({ ...formData, [e.target.name]: e.target.value })
     if (error) setError('')
   }
 
@@ -124,14 +125,14 @@ export default function LoginPage() {
             )}
 
             <Input
-              label="Username"
-              type="text"
-              name="username"
-              value={formData.username}
+              label="Email"
+              type="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
               required
-              autoComplete="username"
-              placeholder="Enter your username"
+              autoComplete="email"
+              placeholder="you@example.com"
             />
 
             <div>
