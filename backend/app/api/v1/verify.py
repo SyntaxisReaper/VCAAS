@@ -315,18 +315,12 @@ async def spectral_graphs(file: UploadFile = File(...)):
 async def full_analysis(
     file: UploadFile = File(...),
     reference: Optional[UploadFile] = File(None),
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     6-Layer Defense Mechanism Orchestrator.
     Runs all 6 defense layers and computes a weighted authenticity verdict.
     """
-    if not current_user.is_premium:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Full 6-layer analysis requires premium subscription"
-        )
 
     import tempfile, os
     from ...services.prosody_service import ProsodyService

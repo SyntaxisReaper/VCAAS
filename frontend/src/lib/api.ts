@@ -5,7 +5,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -117,7 +117,7 @@ export const healthCheck = async () => {
 
 // Authentication
 export const getCurrentUser = async () => {
-  const response = await api.get('/api/auth/me');
+  const response = await api.get('/api/v1/auth/profile');
   return response.data;
 };
 
@@ -134,48 +134,56 @@ export const verifyEmailOtp = async (email: string, code: string): Promise<{ ok:
 
 // Voice Management
 export const getVoiceSamples = async () => {
-  const response = await api.get('/api/voice/samples');
+  const response = await api.get('/api/v1/voices/');
   return response.data;
 };
 
 export const getAvailableVoices = async () => {
-  const response = await api.get('/api/tts/voices');
+  const response = await api.get('/api/v1/tts/models/available');
   return response.data;
 };
 
 export const getTrainedVoices = async (userId = 'default') => {
-  const response = await api.get('/api/voice/trained', { params: { user_id: userId } });
+  const response = await api.get('/api/v1/voices/', { params: { user_id: userId } });
   return response.data;
 };
 
 export const deleteVoiceSample = async (voiceId: string) => {
-  const response = await api.delete(`/api/voice/samples/${voiceId}`);
+  const response = await api.delete(`/api/v1/voices/${voiceId}`);
   return response.data;
 };
 
 export const deleteTrainedVoice = async (voiceId: string, userId = 'default') => {
-  const response = await api.delete(`/api/voice/trained/${voiceId}`, { params: { user_id: userId } });
+  const response = await api.delete(`/api/v1/voices/${voiceId}`, { params: { user_id: userId } });
   return response.data;
 };
 
 // Text-to-Speech
 export const generateSpeech = async (request: TTSRequest): Promise<{ id: string; status: string; message: string; estimated_completion: string }> => {
-  const response = await api.post('/api/tts/generate', request);
+  const response = await api.post('/api/v1/tts/generate', request);
   return response.data;
 };
 
 export const getTTSJobs = async (): Promise<TTSJob[]> => {
-  const response = await api.get('/api/tts/jobs');
+  const response = await api.get('/api/v1/tts/jobs');
+  return response.data;
+};
+
+export const loginUser = async (email: string, password: string) => {
+  const response = await api.post('/api/v1/auth/login', {
+    email_or_username: email,
+    password: password
+  });
   return response.data;
 };
 
 export const getTTSJob = async (jobId: string): Promise<TTSJob> => {
-  const response = await api.get(`/api/tts/jobs/${jobId}`);
+  const response = await api.get(`/api/v1/tts/job/${jobId}`);
   return response.data;
 };
 
 export const downloadAudio = async (jobId: string): Promise<Blob> => {
-  const response = await api.get(`/api/tts/jobs/${jobId}/audio`, {
+  const response = await api.get(`/api/v1/tts/job/${jobId}/download`, {
     responseType: 'blob',
   });
   return response.data;
@@ -185,15 +193,19 @@ export const downloadAudio = async (jobId: string): Promise<Blob> => {
 export const cloneZeroShot = async (
   text: string,
   language: string,
-  referenceFile: File
+  referenceFile: File,
+  addWatermark: boolean = false
 ): Promise<Blob> => {
   const formData = new FormData();
   formData.append('text', text);
   formData.append('language', language);
   formData.append('reference', referenceFile);
+  if (addWatermark) {
+    formData.append('watermark', 'true');
+  }
 
   try {
-    const response = await api.post('/api/tts/clone', formData, {
+    const response = await api.post('/api/v1/tts/clone', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       responseType: 'blob',
       timeout: 120000, // allow longer timeout for first model load
@@ -225,7 +237,7 @@ export const uploadVoiceSample = async (file: File, userId = 'default') => {
   formData.append('file', file);
   formData.append('user_id', userId);
 
-  const response = await api.post('/api/training/upload', formData, {
+  const response = await api.post('/api/v1/voices/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -234,7 +246,7 @@ export const uploadVoiceSample = async (file: File, userId = 'default') => {
 };
 
 export const startTraining = async (voiceName: string, audioSamples: string[], userId = 'default') => {
-  const response = await api.post('/api/training/start', {
+  const response = await api.post('/api/v1/training/start', {
     voice_name: voiceName,
     audio_samples: audioSamples,
     user_id: userId,
@@ -243,18 +255,18 @@ export const startTraining = async (voiceName: string, audioSamples: string[], u
 };
 
 export const getTrainingJobs = async (userId = 'default'): Promise<{ jobs: TrainingJob[] }> => {
-  const response = await api.get('/api/training/jobs', { params: { user_id: userId } });
+  const response = await api.get('/api/v1/training/jobs', { params: { user_id: userId } });
   return response.data;
 };
 
 export const getTrainingJobStatus = async (trainingId: string): Promise<TrainingJob> => {
-  const response = await api.get(`/api/training/jobs/${trainingId}`);
+  const response = await api.get(`/api/v1/training/job/${trainingId}`);
   return response.data;
 };
 
 // Dashboard
 export const getDashboardStats = async () => {
-  const response = await api.get('/api/dashboard/stats');
+  const response = await api.get('/api/v1/tts/stats');
   return response.data;
 };
 
@@ -276,6 +288,30 @@ export interface SecurityReportResponse {
 
 export const submitSecurityReport = async (reportData: SecurityReportData): Promise<SecurityReportResponse> => {
   const response = await api.post('/api/security/report', reportData);
+  return response.data;
+};
+
+// Deepfake / Defense Verification
+export interface VerificationResult {
+  overall_authenticity: number;
+  final_decision: 'authentic' | 'synthetic' | 'watermarked';
+  flags: string[];
+  watermark_detected: boolean;
+  layers: {
+    layer_1_antispoof: any;
+    layer_3_prosody: any;
+    layer_4_paralinguistic: any;
+    layer_5_semantic: any;
+  };
+}
+
+export const verifyAudio = async (file: File): Promise<VerificationResult> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/api/v1/verify/full-analysis', formData, {
+    timeout: 120000, // Models take time for first inference
+    headers: { 'Content-Type': undefined }
+  });
   return response.data;
 };
 
