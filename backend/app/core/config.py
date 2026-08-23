@@ -14,24 +14,24 @@ class Settings(BaseSettings):
     # API Configuration
     API_V1_STR: str = "/api"
     PROJECT_NAME: str = "Voice Clone Platform"
-    SECRET_KEY: str = Field(..., env="SECRET_KEY")
+    SECRET_KEY: str = Field(default="dev-secret-key-change-in-production-must-be-32-chars-min", env="SECRET_KEY")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days
     
     # CORS - Handled manually to avoid pydantic parsing issues
     
     # Database
-    DATABASE_URL: str = Field(..., env="DATABASE_URL")
+    DATABASE_URL: str = Field(default="sqlite+aiosqlite:///./vcaas_dev2.db", env="DATABASE_URL")
     
     # Redis
     REDIS_URL: str = Field(default="redis://localhost:6379", env="REDIS_URL")
     
     # Firebase Configuration
-    FIREBASE_PROJECT_ID: str = Field(..., env="FIREBASE_PROJECT_ID")
-    FIREBASE_PRIVATE_KEY_ID: str = Field(..., env="FIREBASE_PRIVATE_KEY_ID")
-    FIREBASE_PRIVATE_KEY: str = Field(..., env="FIREBASE_PRIVATE_KEY")
-    FIREBASE_CLIENT_EMAIL: str = Field(..., env="FIREBASE_CLIENT_EMAIL")
-    FIREBASE_CLIENT_ID: str = Field(..., env="FIREBASE_CLIENT_ID")
+    FIREBASE_PROJECT_ID: str = Field(default="voice-clone-platform", env="FIREBASE_PROJECT_ID")
+    FIREBASE_PRIVATE_KEY_ID: str = Field(default="dummy", env="FIREBASE_PRIVATE_KEY_ID")
+    FIREBASE_PRIVATE_KEY: str = Field(default="dummy", env="FIREBASE_PRIVATE_KEY")
+    FIREBASE_CLIENT_EMAIL: str = Field(default="dummy", env="FIREBASE_CLIENT_EMAIL")
+    FIREBASE_CLIENT_ID: str = Field(default="dummy", env="FIREBASE_CLIENT_ID")
     FIREBASE_AUTH_URI: str = Field(
         default="https://accounts.google.com/o/oauth2/auth",
         env="FIREBASE_AUTH_URI"
@@ -42,10 +42,10 @@ class Settings(BaseSettings):
     )
     
     # AWS S3 Configuration
-    AWS_ACCESS_KEY_ID: str = Field(..., env="AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY: str = Field(..., env="AWS_SECRET_ACCESS_KEY")
+    AWS_ACCESS_KEY_ID: str = Field(default="dummy", env="AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY: str = Field(default="dummy", env="AWS_SECRET_ACCESS_KEY")
     AWS_REGION: str = Field(default="us-west-2", env="AWS_REGION")
-    AWS_S3_BUCKET: str = Field(..., env="AWS_S3_BUCKET")
+    AWS_S3_BUCKET: str = Field(default="dummy", env="AWS_S3_BUCKET")
     
     # TTS Configuration
     TTS_MODEL_PATH: str = Field(default="./models", env="TTS_MODEL_PATH")
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     
     # Watermarking
     WATERMARK_STRENGTH: float = 0.1
-    WATERMARK_KEY: str = Field(..., env="WATERMARK_KEY")
+    WATERMARK_KEY: str = Field(default="dev-watermark-key-32-bytes-padding", env="WATERMARK_KEY")
     
     # Celery Configuration
     CELERY_BROKER_URL: str = Field(default="redis://localhost:6379/0", env="CELERY_BROKER_URL")
