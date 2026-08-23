@@ -1,7 +1,8 @@
 'use client'
 
+import React from 'react'
 import { motion } from 'framer-motion'
-import { ShieldCheck, Lock, EyeOff, Server, Key, Fingerprint, RefreshCw } from 'lucide-react'
+import { ShieldCheck, Lock, EyeOff, Server, Key, Fingerprint, RefreshCw, Zap } from 'lucide-react'
 
 export default function SecurityOverview() {
   const policies = [
@@ -64,6 +65,28 @@ export default function SecurityOverview() {
         ))}
       </section>
 
+      {/* 6-Layer Verification Tool */}
+      <section className="max-w-4xl mx-auto px-6 mb-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="bg-[var(--surface-1)] border-t-4 border border-[var(--border)] rounded-3xl p-8"
+          style={{ borderTopColor: 'var(--accent)' }}
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <Zap className="h-6 w-6 text-[var(--accent)]" />
+            <h2 className="text-2xl font-bold text-[var(--text-1)]">6-Layer Deepfake Analysis</h2>
+          </div>
+          <p className="text-[var(--text-2)] mb-8 text-sm max-w-2xl">
+            Upload any audio clip to run it through our military-grade defense mechanism. We analyze acoustics, prosody, paralinguistics, semantics, and verify cryptographic watermarks in real-time.
+          </p>
+
+          <DeepfakeAnalyzer />
+        </motion.div>
+      </section>
+
       {/* Trust Center Banner */}
       <section className="max-w-4xl mx-auto px-6">
         <div className="bg-gradient-to-r from-[var(--surface-2)] to-[var(--surface-1)] border border-[var(--border)] rounded-3xl p-10 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -77,6 +100,123 @@ export default function SecurityOverview() {
         </div>
       </section>
 
+    </div>
+  )
+}
+
+function DeepfakeAnalyzer() {
+  const [file, setFile] = React.useState<File | null>(null)
+  const [loading, setLoading] = React.useState(false)
+  const [result, setResult] = React.useState<any>(null)
+  const [error, setError] = React.useState<string | null>(null)
+
+  const handleVerify = async () => {
+    if (!file) return
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    try {
+      const { verifyAudio } = await import('@/lib/api')
+      const res = await verifyAudio(file)
+      setResult(res)
+    } catch (err: any) {
+      setError(err.message || 'Verification failed. Ensure you are logged in as a premium user.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row items-center gap-4">
+        <input 
+          type="file" 
+          accept="audio/*" 
+          onChange={e => setFile(e.target.files?.[0] || null)}
+          className="block w-full max-w-sm text-sm text-[var(--text-2)]
+            file:mr-4 file:py-3 file:px-5
+            file:rounded-xl file:border-0
+            file:text-sm file:font-semibold
+            file:bg-[var(--surface-2)] file:text-[var(--text-1)]
+            hover:file:bg-[var(--surface-3)] transition-colors cursor-pointer"
+        />
+        <button 
+          onClick={handleVerify}
+          disabled={!file || loading}
+          className="bg-white text-black font-medium px-8 py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Analyzing...' : 'Run Analysis'}
+        </button>
+      </div>
+
+      {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm">
+          {error}
+        </div>
+      )}
+
+      {result && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+          <div className="col-span-full mb-4">
+            <h3 className="text-xl font-bold text-[var(--text-1)] flex items-center gap-2 mb-2">
+              Final Decision: 
+              <span className={`tracking-wider ${result.verdict?.includes('Human') ? 'text-emerald-400' : result.verdict?.includes('Watermarked') ? 'text-[#3b82f6]' : 'text-red-400'}`}>
+                {result.verdict}
+              </span>
+            </h3>
+            <div className="inline-block px-3 py-1 bg-[var(--surface-2)] rounded-lg text-sm font-medium text-[var(--text-2)] border border-[var(--border)]">
+              Overall Authenticity: {((result.overall_authenticity_score || 0) * 100).toFixed(1)}%
+            </div>
+          </div>
+
+          <LayerCard title="1. Anti-Spoof (Acoustics)" data={result.layers?.layer1_antispoof} scoreField="spoof_score" invert />
+          <LayerCard title="2. Speaker Identity" data={result.layers?.layer2_speaker} scoreField="similarity_score" />
+          <LayerCard title="3. Prosody (Pitch Stability)" data={result.layers?.layer3_prosody} scoreField="authenticity_score" />
+          <LayerCard title="4. Paralinguistic (Emotion)" data={result.layers?.layer4_paralinguistic} scoreField="authenticity_score" />
+          <LayerCard title="5. Semantic (Whisper)" data={result.layers?.layer5_semantic} scoreField="authenticity_score" />
+          <div className="bg-[var(--surface-2)] p-5 rounded-xl border border-[var(--border)] flex flex-col justify-center">
+            <h4 className="text-sm font-medium text-[var(--text-2)] mb-3">6. Watermark Detection</h4>
+            <div className={`text-2xl font-bold ${result.layers?.layer6_watermark?.found ? 'text-[#3b82f6]' : 'text-[var(--text-3)]'}`}>
+              {result.layers?.layer6_watermark?.found ? 'DETECTED' : 'Not Found'}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function LayerCard({ title, data, scoreField, invert = false }: { title: string, data: any, scoreField: string, invert?: boolean }) {
+  if (!data || data.status === 'skipped') {
+    return (
+      <div className="bg-[var(--surface-2)] p-5 rounded-xl border-l-4 border-[var(--border)] border-l-[var(--text-3)]">
+        <h4 className="text-sm font-medium text-[var(--text-2)] mb-2">{title}</h4>
+        <div className="text-xl font-bold text-[var(--text-3)]">Skipped</div>
+      </div>
+    )
+  }
+  if (data.error) {
+    return (
+      <div className="bg-[var(--surface-2)] p-5 rounded-xl border-l-4 border-[var(--border)] border-l-yellow-500">
+        <h4 className="text-sm font-medium text-[var(--text-2)] mb-2">{title}</h4>
+        <div className="text-sm text-yellow-500 mb-2">Error</div>
+        <div className="text-xs text-[var(--text-3)] overflow-auto max-h-24">
+          {data.error}
+        </div>
+      </div>
+    )
+  }
+  const score = data[scoreField] || 0;
+  const displayScore = invert ? (1 - score) : score;
+  const isSuspicious = displayScore < 0.5;
+
+  return (
+    <div className={`bg-[var(--surface-2)] p-5 rounded-xl border-l-4 border-[var(--border)] ${isSuspicious ? 'border-l-red-500' : 'border-l-emerald-500'}`}>
+      <h4 className="text-sm font-medium text-[var(--text-2)] mb-2">{title}</h4>
+      <div className="text-xl font-bold text-[var(--text-1)] mb-3">Score: {(score * 100).toFixed(1)}%</div>
+      <div className="text-xs text-[var(--text-3)] font-mono overflow-auto max-h-24 bg-[var(--surface-1)] p-2 rounded">
+        {JSON.stringify(data.details || data.features || data, null, 2)}
+      </div>
     </div>
   )
 }

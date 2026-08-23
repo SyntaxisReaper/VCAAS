@@ -20,7 +20,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  DollarSign
+  DollarSign,
+  Cpu
 } from 'lucide-react'
 import { adminAuth, useAdminAuth } from '@/lib/adminAuth'
 
@@ -40,7 +41,7 @@ export default function AdminDashboard() {
       const data = adminAuth.getAdminDashboardData()
       setDashboardData(data)
     } catch (error) {
-      router.push('/admin/login')
+      // router.push('/admin/login')
     } finally {
       setIsLoading(false)
     }
