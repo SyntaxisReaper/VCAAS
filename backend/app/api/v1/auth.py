@@ -23,6 +23,7 @@ from ...schemas.auth import (
     UserCreate, 
     UserLogin, 
     UserResponse, 
+    UserUpdate,
     Token,
     ApiKeyCreate,
     ApiKeyResponse
