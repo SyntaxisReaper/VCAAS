@@ -53,6 +53,8 @@ export default function ProfilePage() {
     email: user?.email || '',
     phone: (user as any)?.phoneNumber || 'Not provided',
     location: 'Not specified',
+    company: '',
+    role: '',
     joinDate: user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'Recently',
     bio: 'Content creator on VCaaS.',
     avatar: user?.photoURL || '/api/placeholder/150/150',
@@ -90,15 +92,32 @@ export default function ProfilePage() {
         ...prev,
         name: localProfile.name || localProfile.username || prev.name,
         email: localProfile.email || prev.email,
+        company: localProfile.company || prev.company,
+        role: localProfile.role || prev.role,
+        location: localProfile.location || prev.location,
+        bio: localProfile.bio || prev.bio,
       }))
     }
   }, [user])
 
   const [editProfile, setEditProfile] = useState(profile)
 
-  const handleSave = () => {
-    setProfile(editProfile)
-    setIsEditing(false)
+  const handleSave = async () => {
+    try {
+      import('@/lib/api').then(async ({ updateProfile }) => {
+        await updateProfile({
+          full_name: editProfile.name,
+          company: editProfile.company,
+          role: editProfile.role,
+          location: editProfile.location,
+          bio: editProfile.bio
+        })
+      }).catch(console.error);
+      setProfile(editProfile)
+      setIsEditing(false)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleCancel = () => {
@@ -283,6 +302,42 @@ export default function ProfilePage() {
                     <div className="flex items-center space-x-3 px-4 py-3 bg-black border border-transparent rounded-lg">
                       <MapPin className="w-4 h-4 text-[var(--text-2)]" />
                       <span className="text-[var(--text-1)] font-medium">{profile.location}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-2)] mb-2">
+                    Company
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editProfile.company}
+                      onChange={(e) => setEditProfile({...editProfile, company: e.target.value})}
+                      className="w-full px-4 py-3 bg-black border border-[var(--border)] rounded-lg focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all text-[var(--text-1)]"
+                    />
+                  ) : (
+                    <div className="flex items-center space-x-3 px-4 py-3 bg-black border border-transparent rounded-lg">
+                      <span className="text-[var(--text-1)] font-medium">{profile.company || 'Not specified'}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-2)] mb-2">
+                    Role
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editProfile.role}
+                      onChange={(e) => setEditProfile({...editProfile, role: e.target.value})}
+                      className="w-full px-4 py-3 bg-black border border-[var(--border)] rounded-lg focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all text-[var(--text-1)]"
+                    />
+                  ) : (
+                    <div className="flex items-center space-x-3 px-4 py-3 bg-black border border-transparent rounded-lg">
+                      <span className="text-[var(--text-1)] font-medium">{profile.role || 'Not specified'}</span>
                     </div>
                   )}
                 </div>

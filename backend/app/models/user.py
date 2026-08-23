@@ -38,6 +38,13 @@ class User(Base):
 
     # Profile
     full_name = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    location = Column(String(255), nullable=True)
+    bio = Column(String(1000), nullable=True)
+    company = Column(String(255), nullable=True)
+    role = Column(String(100), nullable=True)
+    avatar = Column(String(500), nullable=True)
+    notifications = Column(String, nullable=True) # JSON string
 
     # Flags
     is_active = Column(Boolean, default=True, nullable=False)

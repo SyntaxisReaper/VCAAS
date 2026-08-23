@@ -382,3 +382,8 @@ export const syncUserProfile = async (user: { uid?: string | null; email?: strin
 }
 
 export default api;
+
+export const updateProfile = async (profileData: any) => {
+  const response = await api.put('/api/v1/auth/profile', profileData);
+  return response.data;
+};

@@ -112,8 +112,7 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 async def login_user(credentials: UserLogin, db: Session = Depends(get_db)):
     """Authenticate user and return access token."""
     user = db.query(User).filter(
-        (User.email == credentials.email_or_username) | 
-        (User.username == credentials.email_or_username)
+        (User.email == credentials.email)
     ).first()
     
     if not user or not verify_password(credentials.password, user.hashed_password):
@@ -148,15 +147,17 @@ async def get_user_profile(current_user: User = Depends(get_current_user)):
 
 @router.put("/profile", response_model=UserResponse)
 async def update_user_profile(
-    profile_data: dict,
+    profile_data: UserUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update current user's profile information."""
-    # Update allowed fields
-    if "full_name" in profile_data:
-        current_user.full_name = profile_data["full_name"]
     
+    update_data = profile_data.model_dump(exclude_unset=True)
+    
+    for key, value in update_data.items():
+        setattr(current_user, key, value)
+        
     db.commit()
     db.refresh(current_user)
     

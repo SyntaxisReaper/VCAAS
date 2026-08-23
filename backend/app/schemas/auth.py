@@ -26,7 +26,7 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     """Schema for user login."""
-    email_or_username: str = Field(..., min_length=3)
+    email: EmailStr
     password: str = Field(..., min_length=1)
 
 class UserResponse(BaseModel):
@@ -35,12 +35,27 @@ class UserResponse(BaseModel):
     username: str
     email: str
     full_name: Optional[str] = None
+    company: Optional[str] = None
+    role: Optional[str] = None
+    location: Optional[str] = None
+    bio: Optional[str] = None
     is_active: bool
     is_verified: bool
     is_premium: bool
     subscription_tier: str
     created_at: datetime
     last_login: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class UserUpdate(BaseModel):
+    """Schema for updating user profile."""
+    full_name: Optional[str] = Field(None, max_length=255)
+    company: Optional[str] = Field(None, max_length=255)
+    role: Optional[str] = Field(None, max_length=100)
+    location: Optional[str] = Field(None, max_length=255)
+    bio: Optional[str] = Field(None, max_length=1000)
     
     class Config:
         from_attributes = True
