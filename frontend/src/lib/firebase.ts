@@ -6,13 +6,14 @@ import { getDatabase, ref as rtdbRef, update as rtdbUpdate, serverTimestamp as r
 
 // Prefer env vars; fallback to provided web config
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyCGd8v-lIiK6X_daXYx49Tc9DtI96HvXvU',
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'vcaas-c6c43.firebaseapp.com',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'vcaas-c6c43',
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'vcaas-c6c43.firebasestorage.app',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '61832540435',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:61832540435:web:4553166bd9fc6df4286ae6',
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 'G-2VQGJNJ6XG',
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || '',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || '',
 }
 
 // Initialize Firebase only on client side and when config is available
@@ -153,6 +154,38 @@ export const signInWithGoogle = async () => {
       error: errorMessage,
       code: error.code
     }
+  }
+}
+
+export const signInWithEmail = async (email: string, password: string) => {
+  if (!isFirebaseInitialized() || !auth) {
+    return { success: false, error: 'Firebase is not initialized' }
+  }
+  try {
+    const { signInWithEmailAndPassword } = await import('firebase/auth')
+    const result = await signInWithEmailAndPassword(auth, email, password)
+    return { success: true, user: result.user }
+  } catch (error: any) {
+    console.error('Email Sign-In error:', error)
+    return { success: false, error: error.message, code: error.code }
+  }
+}
+
+export const signUpWithEmail = async (email: string, password: string, displayName?: string) => {
+  if (!isFirebaseInitialized() || !auth) {
+    return { success: false, error: 'Firebase is not initialized' }
+  }
+  try {
+    const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth')
+    const result = await createUserWithEmailAndPassword(auth, email, password)
+    if (displayName) {
+      await updateProfile(result.user, { displayName })
+    }
+    await upsertUserProfile(result.user, { displayName })
+    return { success: true, user: result.user }
+  } catch (error: any) {
+    console.error('Email Sign-Up error:', error)
+    return { success: false, error: error.message, code: error.code }
   }
 }
 
