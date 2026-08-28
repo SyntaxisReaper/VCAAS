@@ -27,7 +27,7 @@ let rtdb: Database | undefined
 if (typeof window !== 'undefined' && firebaseConfig.apiKey) {
   try {
     // Check if using the default placeholder API key from the template
-    if (firebaseConfig.apiKey === 'AIzaSyCGd8v-lIiK6X_daXYx49Tc9DtI96HvXvU') {
+    if (firebaseConfig.apiKey === 'YOUR-PLACEHOLDER-API-KEY') {
       console.warn('⚠️  Using placeholder Firebase API Key. Firebase will NOT be initialized.');
       console.warn('👉  Please update .env.local with valid Firebase credentials.');
     } else {
