@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Navbar } from '../components/layout/Navbar'
+import { Footer } from '../components/layout/Footer'
 import { Providers } from '../components/providers/Providers'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
@@ -44,6 +45,7 @@ export default function RootLayout({
           <div className="relative min-h-screen flex flex-col">
             <Navbar />
             <main className="flex-1">{children}</main>
+            <Footer />
           </div>
         </Providers>
         <SpeedInsights />

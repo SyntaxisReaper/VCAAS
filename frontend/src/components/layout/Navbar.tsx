@@ -73,35 +73,38 @@ export function Navbar() {
 
           {/* ── Logo ─────────────────────────────── */}
           <Link href="/" id="nav-logo" className="flex items-center gap-2 shrink-0" aria-label="VCaaS home">
-            <Image src="/logo.png" alt="VCaaS" width={44} height={44} style={{ borderRadius: 8 }} priority />
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-1)', letterSpacing: '-0.025em' }}>
+            <Image src="/logo.png" alt="VCaaS" width={56} height={56} style={{ borderRadius: 8 }} priority />
+            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.025em' }}>
               VCaaS
             </span>
           </Link>
 
           {/* ── Desktop Nav ──────────────────────── */}
           <nav className="hidden md:flex items-center gap-1 flex-1" aria-label="Main navigation">
-            {NAV_LINKS.map(({ label, href }) => (
-              <Link
-                key={href}
-                href={href}
-                id={`nav-${label.toLowerCase()}`}
-                style={{
-                  fontSize: 14,
-                  fontWeight: 400,
-                  color: isActive(href) ? 'var(--text-1)' : 'var(--text-2)',
-                  textDecoration: 'none',
-                  padding: '6px 12px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: isActive(href) ? 'var(--surface-2)' : 'transparent',
-                  transition: 'color 150ms ease, background 150ms ease',
-                }}
-                onMouseEnter={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = 'var(--text-1)' }}
-                onMouseLeave={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
-              >
-                {label}
-              </Link>
-            ))}
+            {[...NAV_LINKS, { label: 'Profile', href: '/profile', authRequired: true }].map(({ label, href, authRequired }) => {
+              if (authRequired && !isAuthenticated) return null;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  id={`nav-${label.toLowerCase()}`}
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: isActive(href) ? 'var(--text-1)' : 'var(--text-2)',
+                    textDecoration: 'none',
+                    padding: '6px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: isActive(href) ? 'var(--surface-2)' : 'transparent',
+                    transition: 'color 150ms ease, background 150ms ease',
+                  }}
+                  onMouseEnter={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = 'var(--text-1)' }}
+                  onMouseLeave={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* ── Right Actions ────────────────────── */}

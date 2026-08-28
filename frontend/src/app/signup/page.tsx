@@ -37,7 +37,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const router = useRouter()
-  const { signInWithGoogle, user, loading: authLoading } = useAuth()
+  const { signInWithGoogle, signUpWithEmail, user, loading: authLoading } = useAuth()
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -82,7 +82,14 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      console.log('Signup attempt:', formData)
+      console.log('Signup attempt:', formData.email)
+      const result = await signUpWithEmail(formData.email, formData.password, formData.displayName || formData.username)
+      
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+      
+      // Still keep local copy for immediate UI access if needed
       if (typeof window !== 'undefined') {
         localStorage.setItem('vcaas_user', JSON.stringify({
           name: formData.displayName || formData.username,
@@ -90,7 +97,6 @@ export default function SignupPage() {
           username: formData.username
         }))
       }
-      await new Promise(resolve => setTimeout(resolve, 1500))
       router.push('/dashboard')
     } catch (err: any) {
       setErrors({ submit: err.message || 'Registration failed. Please try again.' })

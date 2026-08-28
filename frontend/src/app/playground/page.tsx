@@ -38,9 +38,34 @@ export default function PlaygroundPage() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const voices = [
+  const [voices, setVoices] = useState<any[]>([
     { id: 'xtts-default', name: 'XTTS v2 (Zero-shot)', type: 'System', status: 'Ready' },
-  ]
+  ])
+
+  React.useEffect(() => {
+    const fetchVoices = async () => {
+      try {
+        const { getAvailableVoices } = await import('@/lib/api')
+        const models = await getAvailableVoices()
+        if (Array.isArray(models)) {
+          const mappedModels = models.map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            type: 'System',
+            status: m.status === 'ready' ? 'Ready' : 'Unavailable'
+          }))
+          // Ensure XTTS is always there as a fallback
+          if (!mappedModels.find(m => m.id === 'xtts-default')) {
+            mappedModels.unshift({ id: 'xtts-default', name: 'XTTS v2 (Zero-shot)', type: 'System', status: 'Ready' })
+          }
+          setVoices(mappedModels)
+        }
+      } catch (err) {
+        console.error('Failed to fetch voices:', err)
+      }
+    }
+    fetchVoices()
+  }, [])
 
   const sampleTexts = [
     "Welcome to VCaaS, where your voice becomes a powerful creative tool.",
@@ -55,19 +80,13 @@ export default function PlaygroundPage() {
     setIsGenerating(true)
     setGeneratedAudio(null)
     try {
-      const fd = new FormData()
-      fd.append('text', text)
-      fd.append('language', language)
-      fd.append('reference', referenceFile)
-      if (addWatermark) {
-        fd.append('watermark', 'true')
-      }
-      const res = await axios.post(`${API}/api/v1/tts/clone`, fd, { responseType: 'blob' })
-      const blobUrl = URL.createObjectURL(new Blob([res.data], { type: 'audio/wav' }))
+      const { cloneZeroShot } = await import('@/lib/api')
+      const blob = await cloneZeroShot(text, language, referenceFile, addWatermark)
+      const blobUrl = URL.createObjectURL(new Blob([blob], { type: 'audio/wav' }))
       setGeneratedAudio(blobUrl)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Generation failed:', error)
-      alert('Failed to generate audio. Check backend logs.')
+      alert(error.message || 'Failed to generate audio. Check backend logs.')
     } finally {
       setIsGenerating(false)
     }
