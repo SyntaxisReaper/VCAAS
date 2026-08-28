@@ -1,5 +1,5 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, User, Auth } from 'firebase/auth'
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, User, Auth } from 'firebase/auth'
 import { getFirestore, Firestore, doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { getAnalytics, Analytics } from 'firebase/analytics'
 import { getDatabase, ref as rtdbRef, update as rtdbUpdate, serverTimestamp as rtdbServerTimestamp, Database } from 'firebase/database'
@@ -162,7 +162,6 @@ export const signInWithEmail = async (email: string, password: string) => {
     return { success: false, error: 'Firebase is not initialized' }
   }
   try {
-    const { signInWithEmailAndPassword } = await import('firebase/auth')
     const result = await signInWithEmailAndPassword(auth, email, password)
     return { success: true, user: result.user }
   } catch (error: any) {
@@ -176,7 +175,6 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
     return { success: false, error: 'Firebase is not initialized' }
   }
   try {
-    const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth')
     const result = await createUserWithEmailAndPassword(auth, email, password)
     if (displayName) {
       await updateProfile(result.user, { displayName })
