@@ -8,7 +8,6 @@ from loguru import logger
 from app.core.config import settings
 from app.core.database import engine
 from app.core.database import Base, create_tables_sync
-from app.core.mongodb import init_database, close_database, mongodb
 from app.api.v1 import auth, voices, tts, training, users, verify, licenses, otp
 
 
@@ -25,20 +24,9 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"SQLAlchemy database initialization failed: {e}")
     
-    # Initialize MongoDB connection
-    mongo_success = await init_database()
-    if mongo_success:
-        logger.info("MongoDB initialized successfully")
-        # Create test data in development
-        if settings.ENVIRONMENT == "development":
-            await mongodb.create_test_data()
-    else:
-        logger.error("MongoDB initialization failed")
-    
     yield
     
     # Cleanup
-    await close_database()
     logger.info("Shutting down Voice Clone Platform API")
 
 

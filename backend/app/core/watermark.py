@@ -99,9 +99,8 @@ class WatermarkEncoder:
             # Load audio
             audio, sr = librosa.load(audio_path, sr=self.sample_rate)
             
-            # Create watermark payload
-            # Use raw ID for robust echo hiding to save space
-            payload = watermark_id.encode('utf-8')
+            # Create watermark payload with HMAC signature
+            payload = self._create_payload(watermark_id, license_id)
             
             # Apply spread-spectrum watermarking
             watermarked_audio = self._spread_spectrum_embed(audio, payload)
@@ -295,25 +294,11 @@ class WatermarkDecoder:
             payloads = self._spread_spectrum_extract(audio)
             
             for payload in payloads:
-                try:
-                    watermark_id = payload.decode('utf-8')
-                    # Validate that it looks like a hex string
-                    # Echo Hiding can have bit errors, so we just check basic length and charset
-                    # Remove any nulls or garbage at the end
-                    watermark_id = watermark_id.strip('\x00').strip()
-                    if len(watermark_id) >= 16:
-                        # Take first 16 chars assuming it's the ID
-                        watermark_id = watermark_id[:16]
-                        if all(c in '0123456789abcdefABCDEF' for c in watermark_id):
-                            return {
-                                'found': True,
-                                'watermark_id': watermark_id,
-                                'confidence': 1.0,
-                                'detection_method': 'robust_echo_hiding'
-                            }
-                except Exception:
-                    # Ignore decode errors for this candidate and try the next one
-                    continue
+                # Process each candidate through cryptographic verification
+                result = self._verify_and_parse_payload(payload)
+                if result:
+                    result['detection_method'] = 'robust_echo_hiding'
+                    return result
                     
             print("Robust Detection: No valid watermark found in any candidate payloads")
             return {'found': False, 'confidence': 0.0}

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from pydantic import BaseModel, Field
 import json
 
-from app.core.auth import get_current_user
+from .auth import get_current_user
 # from app.models.mongo.user import User  # REMOVED
 # from app.models.mongo.voice_sample import VoiceSample # REMOVED
 # from app.services.voice_training_service import voice_training_service # REMOVED
@@ -50,7 +50,10 @@ async def start_training(
     current_user: User = Depends(get_current_user)
 ):
     """Start a new voice training job"""
-    raise HTTPException(status_code=501, detail="Training service not implemented in this version (Missing MongoDB deps)")
+    raise HTTPException(
+        status_code=501, 
+        detail="Voice Training is currently disabled. This feature requires the MongoDB integration and training worker pipeline."
+    )
 
 
 @router.get("/job/{job_id}", response_model=JobStatusResponse)
@@ -59,7 +62,10 @@ async def get_job_status(
     current_user: User = Depends(get_current_user)
 ):
     """Get training job status"""
-    raise HTTPException(status_code=501, detail="Training service not implemented")
+    raise HTTPException(
+        status_code=501, 
+        detail="Voice Training is currently disabled. This feature requires the MongoDB integration and training worker pipeline."
+    )
 
 
 @router.post("/job/{job_id}/cancel")
@@ -68,7 +74,10 @@ async def cancel_job(
     current_user: User = Depends(get_current_user)
 ):
     """Cancel a training job"""
-    raise HTTPException(status_code=501, detail="Training service not implemented")
+    raise HTTPException(
+        status_code=501, 
+        detail="Voice Training is currently disabled. This feature requires the MongoDB integration and training worker pipeline."
+    )
 
 
 @router.get("/jobs")
@@ -77,8 +86,10 @@ async def list_training_jobs(
     current_user: User = Depends(get_current_user)
 ):
     """List user's training jobs"""
-    # return {"jobs": [], "total": 0}
-    raise HTTPException(status_code=501, detail="Training service not implemented")
+    raise HTTPException(
+        status_code=501, 
+        detail="Voice Training is currently disabled. This feature requires the MongoDB integration and training worker pipeline."
+    )
 
 
 @router.get("/samples/suitable")
@@ -86,7 +97,10 @@ async def get_suitable_samples(
     current_user: User = Depends(get_current_user)
 ):
     """Get voice samples suitable for training"""
-    raise HTTPException(status_code=501, detail="Training service not implemented")
+    raise HTTPException(
+        status_code=501, 
+        detail="Voice Training is currently disabled. This feature requires the MongoDB integration and training worker pipeline."
+    )
 
 
 @router.post("/validate-samples")
@@ -95,7 +109,10 @@ async def validate_training_samples(
     current_user: User = Depends(get_current_user)
 ):
     """Validate samples for training"""
-    raise HTTPException(status_code=501, detail="Training service not implemented")
+    raise HTTPException(
+        status_code=501, 
+        detail="Voice Training is currently disabled. This feature requires the MongoDB integration and training worker pipeline."
+    )
 
 
 @router.get("/stats")
@@ -103,4 +120,7 @@ async def get_training_stats(
     current_user: User = Depends(get_current_user)
 ):
     """Get training service statistics (admin only for now)"""
-    raise HTTPException(status_code=501, detail="Training service not implemented")
+    raise HTTPException(
+        status_code=501, 
+        detail="Voice Training is currently disabled. This feature requires the MongoDB integration and training worker pipeline."
+    )
