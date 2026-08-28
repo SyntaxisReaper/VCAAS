@@ -29,7 +29,11 @@ export default function LoginPage() {
 
       if (!result.success) {
         // Map Firebase error codes to friendly messages
-        const msg = result.error || ''
+        let msg = result.error || ''
+        if (typeof msg !== 'string') {
+          msg = JSON.stringify(msg)
+        }
+        
         if (msg.includes('invalid-credential') || msg.includes('wrong-password') || msg.includes('user-not-found')) {
           throw new Error('Incorrect email or password. Please try again.')
         } else if (msg.includes('too-many-requests')) {
@@ -37,7 +41,7 @@ export default function LoginPage() {
         } else if (msg.includes('user-disabled')) {
           throw new Error('This account has been disabled. Please contact support.')
         } else {
-          throw new Error(msg || 'Login failed. Please try again.')
+          throw new Error(typeof result.error === 'string' ? result.error : 'Login failed. Please try again.')
         }
       }
 

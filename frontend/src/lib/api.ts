@@ -171,7 +171,7 @@ export const getTTSJobs = async (): Promise<TTSJob[]> => {
 
 export const loginUser = async (email: string, password: string) => {
   const response = await api.post('/api/v1/auth/login', {
-    email_or_username: email,
+    email: email,
     password: password
   });
   return response.data;
