@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, User } from 'firebase/auth'
-import { auth, signInWithGoogle, signOutUser, signUpWithEmail, isFirebaseInitialized, upsertUserProfile, mockSignIn, mockSignOut } from '@/lib/firebase'
+import { auth, signInWithGoogle, signOutUser, signUpWithEmail, signInWithEmail, isFirebaseInitialized, upsertUserProfile, mockSignIn, mockSignOut } from '@/lib/firebase'
 import { syncUserProfile, setAuthToken, loginUser } from '@/lib/api'
 
 export interface AuthState {
@@ -130,33 +130,26 @@ export const useAuth = () => {
 
   const signInWithEmailHandler = async (email: string, password: string) => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }))
-    try {
-      const result = await loginUser(email, password)
-      
-      // The backend returns { access_token: "...", token_type: "bearer" }
-      if (result && result.access_token) {
-        setAuthToken(result.access_token)
-        
-        // Mock a user object since we bypassed Firebase Auth
-        const mockUser = {
-          uid: email,
-          email: email,
-          displayName: email.split('@')[0],
-          photoURL: null,
-          getIdToken: async () => result.access_token,
-        }
-        
-        setAuthState({ user: mockUser as any, loading: false, error: null })
-        return { success: true, user: mockUser }
-      } else {
-        throw new Error('Invalid response from server')
-      }
-    } catch (error: any) {
-      console.error('Email Sign-In error:', error)
-      const msg = error.response?.data?.detail || error.message || 'Sign-in failed'
-      setAuthState(prev => ({ ...prev, loading: false, error: msg }))
-      return { success: false, error: msg }
+    
+    let result: any
+    if (!isFirebaseInitialized()) {
+      result = await mockSignIn()
+    } else {
+      result = await signInWithEmail(email, password)
     }
+
+    if (!result.success || !result.user) {
+      setAuthState(prev => ({ ...prev, loading: false, error: result.error || 'Sign-in failed' }))
+    } else {
+      setAuthState(prev => ({ ...prev, user: result.user, loading: false }))
+      try {
+        const token = await result.user.getIdToken();
+        setAuthToken(token);
+      } catch (e) {
+        console.error("Failed to set auth token", e);
+      }
+    }
+    return result
   }
 
   const signUpWithEmailHandler = async (email: string, password: string, displayName?: string) => {

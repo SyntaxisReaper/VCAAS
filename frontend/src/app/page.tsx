@@ -487,7 +487,7 @@ export default function HomePage() {
             className="flex flex-col sm:flex-row gap-3 mb-16"
           >
             <Link
-              href="/auth/signup"
+              href="/signup"
               id="hero-cta-primary"
               className="btn btn-primary"
               style={{ padding: '12px 24px', fontSize: 15 }}
@@ -869,7 +869,7 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row justify-center gap-3">
               <Link
-                href="/auth/signup"
+                href="/signup"
                 id="footer-cta-primary"
                 className="btn btn-primary"
                 style={{ padding: '13px 28px', fontSize: 15 }}
@@ -890,82 +890,6 @@ export default function HomePage() {
           </motion.div>
         </div>
       </AnimSection>
-
-      {/* ══════════════════════════════════════════
-          FOOTER
-          ══════════════════════════════════════════ */}
-      <footer
-        style={{
-          borderTop: '1px solid var(--border)',
-          padding: '40px 0',
-        }}
-      >
-        <div className="container">
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 24,
-            }}
-          >
-            {/* Brand */}
-            <Link
-              href="/"
-              className="flex items-center gap-2"
-              style={{ textDecoration: 'none' }}
-              aria-label="VCaaS home"
-            >
-              <Image
-                src="/logo.png"
-                alt="VCaaS"
-                width={32}
-                height={32}
-                style={{ borderRadius: 6 }}
-              />
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', letterSpacing: '-0.02em' }}>
-                VCaaS
-              </span>
-            </Link>
-
-            {/* Links */}
-            <nav
-              className="flex flex-wrap gap-x-6 gap-y-2"
-              aria-label="Footer navigation"
-            >
-              {[
-                { label: 'Playground', href: '/playground' },
-                { label: 'Pricing',    href: '/pricing'    },
-                { label: 'Docs',       href: '/docs'       },
-                { label: 'Privacy',    href: '/privacy'    },
-                { label: 'Terms',      href: '/terms'      },
-                { label: 'Support',    href: '/help'       },
-              ].map(({ label, href }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  style={{
-                    fontSize: 13,
-                    color: 'var(--text-3)',
-                    textDecoration: 'none',
-                    transition: 'color 150ms ease',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-3)' }}
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-
-            {/* Copyright */}
-            <p style={{ fontSize: 13, color: 'var(--text-3)' }}>
-              © {new Date().getFullYear()} VCaaS. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
 
     </div>
   )
