@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, User } from 'firebase/auth'
-import { auth, signInWithGoogle, signOutUser, isFirebaseInitialized, upsertUserProfile } from '@/lib/firebase'
+import { auth, signInWithGoogle, signOutUser, signUpWithEmail, isFirebaseInitialized, upsertUserProfile, mockSignIn, mockSignOut } from '@/lib/firebase'
+import { syncUserProfile, setAuthToken, loginUser } from '@/lib/api'
 
 export interface AuthState {
   user: User | null
@@ -44,7 +45,7 @@ export const useAuth = () => {
         await upsertUserProfile(user)
         try {
           const token = await user.getIdToken()
-          const { syncUserProfile } = await import('@/lib/api')
+          setAuthToken(token)
           await syncUserProfile(user as any, token)
         } catch { }
       }
@@ -75,7 +76,6 @@ export const useAuth = () => {
     let result: { success: boolean; user?: any; error?: string };
     if (!isFirebaseInitialized()) {
       // Use Mock Auth
-      const { mockSignIn } = await import('@/lib/firebase');
       result = await mockSignIn();
     } else {
       // Use Real Auth
@@ -93,10 +93,8 @@ export const useAuth = () => {
       // Set API token
       try {
         const token = await result.user.getIdToken();
-        const { setAuthToken } = await import('@/lib/api');
         setAuthToken(token);
         // Also sync profile for mock user to ensure backend DB record exists
-        const { syncUserProfile } = await import('@/lib/api');
         await syncUserProfile(result.user as any, token);
       } catch (e) {
         console.error("Failed to set auth token or sync profile", e);
@@ -111,10 +109,8 @@ export const useAuth = () => {
 
     let result: { success: boolean; error?: string };
     if (!isFirebaseInitialized()) {
-      const { mockSignOut } = await import('@/lib/firebase');
       result = await mockSignOut();
     } else {
-      const { signOutUser } = await import('@/lib/firebase');
       result = await signOutUser()
     }
 
@@ -126,10 +122,57 @@ export const useAuth = () => {
       }))
     } else {
       setAuthState(prev => ({ ...prev, user: null, loading: false }))
-      const { setAuthToken } = await import('@/lib/api');
       setAuthToken(null);
     }
 
+    return result
+  }
+
+  const signInWithEmailHandler = async (email: string, password: string) => {
+    setAuthState(prev => ({ ...prev, loading: true, error: null }))
+    try {
+      const result = await loginUser(email, password)
+      
+      // The backend returns { access_token: "...", token_type: "bearer" }
+      if (result && result.access_token) {
+        setAuthToken(result.access_token)
+        
+        // Mock a user object since we bypassed Firebase Auth
+        const mockUser = {
+          uid: email,
+          email: email,
+          displayName: email.split('@')[0],
+          photoURL: null,
+          getIdToken: async () => result.access_token,
+        }
+        
+        setAuthState({ user: mockUser as any, loading: false, error: null })
+        return { success: true, user: mockUser }
+      } else {
+        throw new Error('Invalid response from server')
+      }
+    } catch (error: any) {
+      console.error('Email Sign-In error:', error)
+      const msg = error.response?.data?.detail || error.message || 'Sign-in failed'
+      setAuthState(prev => ({ ...prev, loading: false, error: msg }))
+      return { success: false, error: msg }
+    }
+  }
+
+  const signUpWithEmailHandler = async (email: string, password: string, displayName?: string) => {
+    setAuthState(prev => ({ ...prev, loading: true, error: null }))
+    let result: any
+    if (!isFirebaseInitialized()) {
+      result = await mockSignIn()
+    } else {
+      result = await signUpWithEmail(email, password, displayName)
+    }
+
+    if (!result.success || !result.user) {
+      setAuthState(prev => ({ ...prev, loading: false, error: result.error || 'Sign-up failed' }))
+    } else {
+      setAuthState(prev => ({ ...prev, user: result.user, loading: false }))
+    }
     return result
   }
 
@@ -142,6 +185,8 @@ export const useAuth = () => {
     loading: authState.loading,
     error: authState.error,
     signInWithGoogle: signInWithGoogleHandler,
+    signInWithEmail: signInWithEmailHandler,
+    signUpWithEmail: signUpWithEmailHandler,
     signOut,
     clearError,
     isAuthenticated: !!authState.user
