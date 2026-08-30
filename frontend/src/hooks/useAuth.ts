@@ -41,19 +41,26 @@ export const useAuth = () => {
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       clearTimeout(timeoutId)
-      if (user) {
-        await upsertUserProfile(user)
-        try {
-          const token = await user.getIdToken()
-          setAuthToken(token)
-          await syncUserProfile(user as any, token)
-        } catch { }
-      }
+      
+      // Immediately set user and stop loading to prevent slow UI rendering
       setAuthState({
         user,
         loading: false,
         error: null
       })
+      
+      // Perform background syncing without blocking the UI
+      if (user) {
+        try {
+          // Fire and forget (or await without blocking state)
+          upsertUserProfile(user).catch(console.error)
+          const token = await user.getIdToken()
+          setAuthToken(token)
+          syncUserProfile(user as any, token).catch(console.error)
+        } catch (error) {
+          console.error("Background sync failed:", error)
+        }
+      }
     }, (error) => {
       clearTimeout(timeoutId)
       console.error('Authentication Error:', error)
