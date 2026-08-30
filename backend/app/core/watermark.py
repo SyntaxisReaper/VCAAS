@@ -24,7 +24,7 @@ class WatermarkEncoder:
     
     def __init__(self, secret_key: str = "vcaas_default_key"):
         self.secret_key = secret_key.encode('utf-8')
-        self.sample_rate = 22050  # Standard sample rate for processing
+        self.sample_rate = 44100  # Standard sample rate for processing
         
     def embed_mvp_watermark(
         self,
@@ -221,7 +221,7 @@ class WatermarkDecoder:
     
     def __init__(self, secret_key: str = "vcaas_default_key"):
         self.secret_key = secret_key.encode('utf-8')
-        self.sample_rate = 22050
+        self.sample_rate = 44100
     
     def detect_mvp_watermark(
         self, 

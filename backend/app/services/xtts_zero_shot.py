@@ -100,8 +100,11 @@ class ZeroShotXTTS:
              print("MOCK TTS: Generating sine wave")
              duration = min(len(text) * 0.1, 5.0) # approx duration
              t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
-             # Simple sine wave
+             # Pulsing sine wave (beep...beep...)
              audio = 0.5 * np.sin(2 * np.pi * 440 * t)
+             # Apply an envelope to make it pulse twice per second
+             envelope = 0.5 * (1 + np.sin(2 * np.pi * 2 * t))
+             audio = audio * envelope
              buf = io.BytesIO()
              sf.write(buf, audio, samplerate=sample_rate, format="WAV")
              return buf.getvalue()
