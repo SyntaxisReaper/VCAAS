@@ -1,16 +1,29 @@
 'use client'
 
 import React from 'react'
+import { motion } from 'framer-motion'
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+}
 
 export default function DocsPage() {
   return (
     <div className="min-h-screen py-24 px-6 max-w-5xl mx-auto text-[var(--text-1)]">
-      <h1 className="text-4xl font-bold mb-4">API Documentation</h1>
-      <p className="text-[var(--text-2)] mb-12">Integrate VCaaS voice cloning and deepfake detection directly into your own applications using our REST API.</p>
+      <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+        <h1 className="text-4xl font-bold mb-4">API Documentation</h1>
+        <p className="text-[var(--text-2)] mb-12">Integrate VCaaS voice cloning and deepfake detection directly into your own applications using our REST API.</p>
+      </motion.div>
 
       <div className="space-y-16">
         {/* Authentication */}
-        <section>
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={fadeUp}
+        >
           <h2 className="text-2xl font-semibold text-white mb-4 border-b border-[var(--border)] pb-2">Authentication</h2>
           <p className="text-[var(--text-2)] mb-4">
             All API endpoints require a Firebase ID token passed in the <code className="bg-[var(--bg-3)] px-1 rounded text-sm text-[var(--brand)]">Authorization</code> header.
@@ -18,10 +31,15 @@ export default function DocsPage() {
           <pre className="bg-black/50 p-4 rounded-lg overflow-x-auto border border-[var(--border)] font-mono text-sm text-gray-300">
             <code>Authorization: Bearer YOUR_FIREBASE_ID_TOKEN</code>
           </pre>
-        </section>
+        </motion.section>
 
         {/* TTS Clone */}
-        <section>
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={fadeUp}
+        >
           <h2 className="text-2xl font-semibold text-white mb-4 border-b border-[var(--border)] pb-2">Generate Voice Clone (Zero-Shot)</h2>
           <p className="text-[var(--text-2)] mb-4">
             Generates synthetic speech using a reference audio file. The output is automatically cryptographically watermarked.
@@ -48,10 +66,15 @@ export default function DocsPage() {
   https://vcaas.onrender.com/api/v1/tts/clone --output result.wav`}
             </code>
           </pre>
-        </section>
+        </motion.section>
 
         {/* Verify Full Analysis */}
-        <section>
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={fadeUp}
+        >
           <h2 className="text-2xl font-semibold text-white mb-4 border-b border-[var(--border)] pb-2">Deepfake Verification (6-Layer)</h2>
           <p className="text-[var(--text-2)] mb-4">
             Runs an audio file through our full 6-layer defense system (anti-spoofing, prosody, semantic coherence, and cryptographic watermark detection).
@@ -88,7 +111,7 @@ export default function DocsPage() {
 }`}
             </code>
           </pre>
-        </section>
+        </motion.section>
 
       </div>
     </div>
