@@ -50,6 +50,7 @@ The easiest way to run the stack locally is via Docker, as the backend relies on
 The platform is fully deployed and accessible via the web.
 - **Frontend URL:** `https://vcaas-rbu8.vercel.app`
 - **Backend API URL:** `https://vcaas.onrender.com`
+- **Developer API Documentation:** `https://vcaas-rbu8.vercel.app/docs`
 
 #### **Generating Watermarked Audio**
 1. Navigate to the **Playground** (`/playground`).
