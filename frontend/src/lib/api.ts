@@ -315,6 +315,23 @@ export const verifyAudio = async (file: File): Promise<VerificationResult> => {
   return response.data;
 };
 
+export interface WatermarkVerificationResponse {
+  watermark_found: boolean;
+  watermark_id?: string;
+  confidence?: number;
+  payload?: any;
+}
+
+export const verifyWatermark = async (file: File): Promise<WatermarkVerificationResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/api/v1/verify/watermark', formData, {
+    timeout: 30000,
+    headers: { 'Content-Type': undefined }
+  });
+  return response.data;
+};
+
 // Utility functions
 export const pollJobStatus = async (
   jobId: string,

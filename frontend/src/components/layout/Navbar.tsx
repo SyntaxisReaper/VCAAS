@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { label: 'Dashboard',  href: '/dashboard'  },
   { label: 'Playground', href: '/playground' },
   { label: 'Training',   href: '/training'   },
+  { label: 'Watermark Tech', href: '/watermark' },
   { label: 'Pricing',    href: '/pricing'    },
 ]
 
