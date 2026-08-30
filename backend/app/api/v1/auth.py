@@ -203,4 +203,16 @@ async def verify_access_token(
             detail="Invalid token"
         )
     
-    return {"valid": True, "user_id": payload.get("sub")}
+    return {"valid": True, "user_id": payload.get("sub")}  
+security_optional = HTTPBearer(auto_error=False)  
+  
+async def get_optional_current_user(  
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional),  
+    db: Session = Depends(get_db)  
+) -> Optional[User]:  
+    if not credentials:  
+        return None  
+    try:  
+        return await get_current_user(credentials, db)  
+    except HTTPException:  
+        return None 

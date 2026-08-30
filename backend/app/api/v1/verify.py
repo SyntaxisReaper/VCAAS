@@ -35,11 +35,13 @@ def mock_get_current_user():
 
 router = APIRouter(prefix="/verify", tags=["watermark-verification"])
 
+from .auth import get_current_user, get_optional_current_user
+
 @router.post("/watermark", response_model=WatermarkVerificationResponse)
 async def verify_watermark(
     file: UploadFile = File(...),
     method: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -85,7 +87,7 @@ async def verify_watermark(
         # Store verification record
         verification = WatermarkVerification(
             id=verification_id,
-            user_id=current_user.id,
+            user_id=current_user.id if current_user else None,
             original_filename=file.filename,
             detection_method=detection_result.get('detection_method', 'unknown'),
             watermark_found=detection_result.get('found', False),
