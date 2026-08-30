@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { onAuthStateChanged, User } from 'firebase/auth'
+import { onAuthStateChanged, sendPasswordResetEmail, User } from 'firebase/auth'
 import { auth, signInWithGoogle, signOutUser, signUpWithEmail, signInWithEmail, isFirebaseInitialized, upsertUserProfile, mockSignIn, mockSignOut } from '@/lib/firebase'
 import { syncUserProfile, setAuthToken, loginUser } from '@/lib/api'
 
@@ -165,8 +165,29 @@ export const useAuth = () => {
       setAuthState(prev => ({ ...prev, loading: false, error: result.error || 'Sign-up failed' }))
     } else {
       setAuthState(prev => ({ ...prev, user: result.user, loading: false }))
+      // Set API token and sync profile with backend — same as Google/login handlers
+      try {
+        const token = await result.user.getIdToken()
+        setAuthToken(token)
+        await syncUserProfile(result.user as any, token)
+      } catch (e) {
+        console.error('Failed to set auth token or sync profile after signup', e)
+      }
     }
     return result
+  }
+
+  const resetPasswordHandler = async (email: string) => {
+    if (!isFirebaseInitialized() || !auth) {
+      return { success: false, error: 'Firebase is not initialized' }
+    }
+    try {
+      await sendPasswordResetEmail(auth, email)
+      return { success: true }
+    } catch (error: any) {
+      console.error('Password reset error:', error)
+      return { success: false, error: error.message, code: error.code }
+    }
   }
 
   const clearError = () => {
@@ -180,6 +201,7 @@ export const useAuth = () => {
     signInWithGoogle: signInWithGoogleHandler,
     signInWithEmail: signInWithEmailHandler,
     signUpWithEmail: signUpWithEmailHandler,
+    resetPassword: resetPasswordHandler,
     signOut,
     clearError,
     isAuthenticated: !!authState.user
