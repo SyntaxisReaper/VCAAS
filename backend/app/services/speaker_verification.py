@@ -39,6 +39,29 @@ class SpeakerVerifier:
         emb = emb / (np.linalg.norm(emb) + 1e-9)
         return emb
 
+    def embed_array(self, audio: np.ndarray, sr: int = 16000) -> np.ndarray:
+        """
+        Compute a normalised MFCC speaker embedding from an in-memory array.
+
+        Streaming variant used by StreamSession for speaker-consistency drift
+        detection: compare the first window's embedding against subsequent
+        windows to detect speaker changes mid-session.
+
+        Args:
+            audio: 1-D float32 array, values in [-1, 1], mono.
+            sr: Sample rate in Hz (default 16000).
+
+        Returns:
+            1-D float32 numpy array of shape (40,), L2-normalised.
+        """
+        audio = np.asarray(audio, dtype=np.float32)
+        if audio.ndim > 1:
+            audio = np.mean(audio, axis=-1)
+        mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=40)
+        emb = np.mean(mfcc, axis=1)
+        emb = emb / (np.linalg.norm(emb) + 1e-9)
+        return emb.astype(np.float32)
+
     def verify(self, ref_path: str, qry_path: str) -> Dict[str, Any]:
         if self._rec is not None:
             try:
@@ -59,4 +82,4 @@ class SpeakerVerifier:
             "engine": "mfcc_cosine",
             "score": score,
             "is_same_speaker": bool(score > 0.8),
-        }
+        }

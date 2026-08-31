@@ -106,6 +106,67 @@ class SemanticService:
                 "available": True,
             }
 
+    def analyse_segment(self, audio: "np.ndarray", sr: int = 16000) -> Dict[str, Any]:
+        """
+        Run semantic analysis on a short VAD-gated audio segment (streaming Phase 6, Option A).
+
+        Runs faster-whisper on a 2–4 second numpy array segment rather than a
+        full file. Called from StreamSession as an asyncio.Task — does NOT block
+        the fast-path verdict loop. Results are merged into the next verdict push.
+
+        Accuracy is somewhat lower per-segment than full-file transcription (less
+        context for Whisper) but is good enough for detecting the key anomaly
+        signals (speech rate, pause structure, repetition).
+
+        Args:
+            audio: 1-D float32 numpy array, values in [-1, 1], mono, at `sr`.
+            sr: Sample rate in Hz (default 16000).
+
+        Returns:
+            Same dict shape as analyse() so StreamSession can merge it uniformly.
+        """
+        import numpy as _np
+        import tempfile
+        import soundfile as sf  # type: ignore
+
+        if not _HAS_WHISPER:
+            return {
+                "authenticity_score": 0.5,
+                "transcription": None,
+                "anomaly_flags": ["faster-whisper not installed"],
+                "engine": "semantic_whisper",
+                "available": False,
+            }
+
+        audio = _np.asarray(audio, dtype=_np.float32)
+        if audio.ndim > 1:
+            audio = _np.mean(audio, axis=-1)
+
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                tmp_path = tmp.name
+            sf.write(tmp_path, audio, sr)
+            self._ensure_model()
+            return self._analyse_with_whisper(tmp_path)
+        except Exception as exc:
+            return {
+                "authenticity_score": 0.5,
+                "transcription": None,
+                "anomaly_flags": [f"Segment transcription error: {exc}"],
+                "engine": "semantic_whisper",
+                "available": True,
+            }
+        finally:
+            if tmp_path:
+                try:
+                    import os as _os
+                    _os.unlink(tmp_path)
+                except Exception:
+                    pass
+
+
+
     def _analyse_with_whisper(self, audio_path: str) -> Dict[str, Any]:
         segments_iter, info = self._model.transcribe(  # type: ignore[union-attr]
             audio_path,

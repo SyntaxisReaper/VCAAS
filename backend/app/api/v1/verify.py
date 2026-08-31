@@ -328,6 +328,7 @@ async def full_analysis(
     from ...services.prosody_service import ProsodyService
     from ...services.paralinguistic_service import ParalinguisticService
     from ...services.semantic_service import SemanticService
+    from ...services.risk_scoring import combine_layer_results, sanitize_numpy
 
     try:
         # Save sample
@@ -405,52 +406,12 @@ async def full_analysis(
         except Exception as e:
             results["layer6_watermark"] = {"error": str(e)}
 
-        # Calculate final weighted authenticity score
-        total_weight = sum(w["weight"] for w in weights.values())
-        if total_weight > 0:
-            final_authenticity = sum(w["score"] * w["weight"] for w in weights.values()) / total_weight
-        else:
-            final_authenticity = 0.5
+        # Combine layer scores using shared risk_scoring module
+        scored = combine_layer_results(results, weights)
+        scored["analysis_id"] = f"full_{uuid.uuid4().hex[:12]}"
+        scored["analyzed_at"] = datetime.utcnow().isoformat()
 
-        if final_authenticity > 0.8:
-            verdict = "Authentic (Human)"
-        elif final_authenticity > 0.5:
-            verdict = "Suspicious (Likely Human)"
-        elif final_authenticity > 0.2:
-            verdict = "Suspicious (Likely Synthetic)"
-        else:
-            verdict = "Deepfake (Synthetic)"
-
-        # Definite synthetic override if watermark is found
-        if results.get("layer6_watermark", {}).get("found", False):
-            verdict = "Deepfake (Watermarked Synthetic)"
-            final_authenticity = 0.0
-
-        def sanitize_numpy(obj):
-            if isinstance(obj, dict):
-                return {k: sanitize_numpy(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [sanitize_numpy(v) for v in obj]
-            elif isinstance(obj, tuple):
-                return tuple(sanitize_numpy(v) for v in obj)
-            elif hasattr(obj, 'item') and not isinstance(obj, (dict, list, tuple)):
-                return obj.item()
-            elif isinstance(obj, np.ndarray):
-                return sanitize_numpy(obj.tolist())
-            elif isinstance(obj, (float, np.float32, np.float64)):
-                if np.isnan(obj) or np.isinf(obj): return 0.0
-            return obj
-
-        response = {
-            "analysis_id": f"full_{uuid.uuid4().hex[:12]}",
-            "overall_authenticity_score": round(final_authenticity, 4),
-            "verdict": verdict,
-            "layers": results,
-            "weights_used": weights,
-            "analyzed_at": datetime.utcnow().isoformat()
-        }
-
-        return sanitize_numpy(response)
+        return sanitize_numpy(scored)
 
     finally:
         try:

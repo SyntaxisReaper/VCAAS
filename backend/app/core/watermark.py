@@ -521,3 +521,51 @@ class WatermarkService:
             
             robust_result = self.decoder.detect_robust_watermark(audio_path)
             return robust_result if robust_result.get('found') else mvp_result
+
+    async def detect_watermark_array(
+        self,
+        audio: np.ndarray,
+        sr: int = 44100,
+        method: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Detect watermark directly from an in-memory numpy array.
+
+        Streaming variant (Phase 4): StreamSession calls this with a snapshot
+        of its circular buffer rather than a file path. Internally writes a
+        temporary WAV then delegates to detect_watermark(), preserving all
+        existing decode logic.
+
+        Args:
+            audio: 1-D int16 or float32 numpy array of audio samples, mono.
+            sr: Sample rate of the audio (default 44100 to match WatermarkEncoder).
+            method: Detection method ('mvp', 'robust', or None for auto-detect).
+
+        Returns:
+            Same dict as detect_watermark().
+        """
+        import tempfile
+        import soundfile as sf  # type: ignore
+
+        # Normalise to float32 [-1, 1] for soundfile
+        if audio.dtype == np.int16:
+            audio_f = audio.astype(np.float32) / 32768.0
+        else:
+            audio_f = np.asarray(audio, dtype=np.float32)
+
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                tmp_path = tmp.name
+
+            sf.write(tmp_path, audio_f, sr)
+            result = await self.detect_watermark(tmp_path, method=method)
+            return result
+        except Exception as exc:
+            logger.error("detect_watermark_array failed: %s", exc)
+            return {"found": False, "error": str(exc)}
+        finally:
+            try:
+                import os as _os
+                _os.unlink(tmp_path)
+            except Exception:
+                pass

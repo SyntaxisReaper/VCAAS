@@ -33,6 +33,7 @@ torch<2.6.0,>=2.2.0
 torchaudio<2.6.0,>=2.2.0
 transformers<5.0.0,>=4.36.2
 huggingface_hub<0.24.0
+webrtcvad>=2.0.10
 
 # TTS and Voice Cloning
 TTS>=0.22.0

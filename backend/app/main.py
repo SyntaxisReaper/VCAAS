@@ -13,7 +13,7 @@ import time
 from typing import Dict, Any
 
 # Import routers
-from .api.v1 import auth, voices, tts, licenses, verify
+from .api.v1 import auth, voices, tts, licenses, verify, verify_stream
 from .api.v1 import otp as otp_routes
 from .api.v1 import users as users_routes
 from .core.config import settings
@@ -214,6 +214,12 @@ app.include_router(
     verify.router,
     prefix="/api/v1",
     tags=["Watermark Verification"]
+)
+
+app.include_router(
+    verify_stream.router,
+    prefix="/api/v1",
+    tags=["Real-Time Streaming"]
 )
 
 # Root endpoints

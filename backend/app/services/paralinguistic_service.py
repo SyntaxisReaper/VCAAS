@@ -46,6 +46,34 @@ class ParalinguisticService:
                 "engine": "paralinguistic_heuristic",
             }
 
+    def analyse_array(self, audio: np.ndarray, sr: int = 16000) -> Dict[str, Any]:
+        """
+        Run paralinguistic analysis directly on an in-memory numpy array.
+
+        Streaming variant: skips librosa.load() since StreamSession already
+        has the audio in memory. Delegates to the same _analyse_waveform()
+        used by the file-based path.
+
+        Args:
+            audio: 1-D float32 array, values in [-1, 1], mono.
+            sr: Sample rate in Hz (default 16000).
+
+        Returns:
+            Same dict as analyse().
+        """
+        try:
+            audio = np.asarray(audio, dtype=np.float32)
+            if audio.ndim > 1:
+                audio = np.mean(audio, axis=-1)
+            return self._analyse_waveform(audio, sr)
+        except Exception as exc:
+            return {
+                "authenticity_score": 0.5,
+                "error": str(exc),
+                "engine": "paralinguistic_heuristic",
+            }
+
+
     def _analyse_waveform(self, y: np.ndarray, sr: int) -> Dict[str, Any]:
         # 1. Arousal Variance (Energy/RMS fluctuations)
         # Humans naturally vary their volume/energy when speaking (prosodic stress).

@@ -77,3 +77,23 @@ class AntiSpoofDetector:
     def detect(self, path: str) -> Dict[str, Any]:
         y, sr = librosa.load(path, sr=16000, mono=True)
         return self._heuristics(y, sr)
+
+    def detect_array(self, audio: np.ndarray, sr: int = 16000) -> Dict[str, Any]:
+        """
+        Run anti-spoof analysis directly on an in-memory numpy array.
+
+        Streaming variant: skips librosa.load() since the caller (StreamSession)
+        already has the audio in memory. The underlying _heuristics() logic is
+        identical to the file-based detect() path.
+
+        Args:
+            audio: 1-D float32 array, values in [-1, 1], mono.
+            sr: Sample rate in Hz (default 16000).
+
+        Returns:
+            Same dict as detect().
+        """
+        audio = np.asarray(audio, dtype=np.float32)
+        if audio.ndim > 1:
+            audio = np.mean(audio, axis=-1)
+        return self._heuristics(audio, sr)
