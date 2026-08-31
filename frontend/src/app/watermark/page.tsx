@@ -58,11 +58,12 @@ export default function WatermarkShowcasePage() {
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           {/* Left Column: Educational Content */}
           <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-8"
-          >
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.5 }}
+          className="space-y-8"
+        >
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
                 <ShieldCheck className="w-4 h-4 text-[#3b82f6]" />
@@ -111,11 +112,12 @@ export default function WatermarkShowcasePage() {
 
           {/* Right Column: Interactive UI */}
           <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-[var(--surface-1)] border border-[var(--border)] rounded-3xl overflow-hidden shadow-2xl"
-          >
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="bg-[var(--surface-1)] border border-[var(--border)] rounded-3xl overflow-hidden shadow-2xl"
+        >
             {/* Tabs */}
             <div className="flex border-b border-[var(--border)]">
               <button 

@@ -255,8 +255,9 @@ export default function BillingPage() {
         {/* Usage Overview */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.5, delay: 0.1 }}
           className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden mb-8 shadow-2xl"
         >
           <div className="p-6 border-b border-[var(--border)] flex items-center space-x-3 bg-black/50">
@@ -274,8 +275,9 @@ export default function BillingPage() {
                   <motion.div 
                     className="bg-white h-full rounded-full"
                     initial={{ width: '0%' }}
-                    animate={{ width: '30%' }}
-                    transition={{ duration: 1, delay: 0.4 }}
+                    whileInView={{ width: '30%' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, delay: 0.2 }}
                   />
                 </div>
               </div>
@@ -289,8 +291,9 @@ export default function BillingPage() {
                   <motion.div 
                     className="bg-white h-full rounded-full"
                     initial={{ width: '0%' }}
-                    animate={{ width: '50%' }}
-                    transition={{ duration: 1, delay: 0.5 }}
+                    whileInView={{ width: '50%' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, delay: 0.3 }}
                   />
                 </div>
               </div>
@@ -304,8 +307,9 @@ export default function BillingPage() {
                   <motion.div 
                     className="bg-white h-full rounded-full"
                     initial={{ width: '0%' }}
-                    animate={{ width: '12.5%' }}
-                    transition={{ duration: 1, delay: 0.6 }}
+                    whileInView={{ width: '12.5%' }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, delay: 0.4 }}
                   />
                 </div>
               </div>
@@ -322,7 +326,8 @@ export default function BillingPage() {
         {/* Billing History */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.5, delay: 0.3 }}
           className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-2xl"
         >

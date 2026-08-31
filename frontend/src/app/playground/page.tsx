@@ -115,7 +115,8 @@ export default function PlaygroundPage() {
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
@@ -135,7 +136,8 @@ export default function PlaygroundPage() {
             {/* Text Input */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5, delay: 0.1 }}
               className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6"
             >
@@ -238,7 +240,8 @@ export default function PlaygroundPage() {
             {generatedAudio && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.5 }}
                 className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6"
               >
@@ -291,7 +294,8 @@ export default function PlaygroundPage() {
             {/* Voice Selection */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5, delay: 0.2 }}
               className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6"
             >
@@ -329,7 +333,8 @@ export default function PlaygroundPage() {
             {/* Voice Settings */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5, delay: 0.3 }}
               className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6"
             >
@@ -427,7 +432,8 @@ export default function PlaygroundPage() {
             {/* Quick Actions */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.5, delay: 0.4 }}
               className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6"
             >
