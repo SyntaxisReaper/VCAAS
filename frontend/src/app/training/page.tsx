@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   XCircle,
   Mic,
-  Waveform,
   ChevronRight,
   Info,
 } from 'lucide-react'
@@ -323,7 +322,7 @@ export default function VoiceTrainingPage() {
 
             <motion.div variants={fadeUp} className="bg-[var(--surface-1)] border border-[var(--border)] rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Waveform className="w-4 h-4 text-sky-400" />
+                <Activity className="w-4 h-4 text-sky-400" />
                 <h3 className="text-sm font-semibold">What we analyze</h3>
               </div>
               <ul className="space-y-2">

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, User, Settings, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react'
 import { useAuthContext } from '@/components/providers/AuthProvider'
 
-const NAV_LINKS = [
+const NAV_LINKS: { label: string; href: string; authRequired?: boolean }[] = [
   { label: 'Dashboard',  href: '/dashboard'  },
   { label: 'Playground', href: '/playground' },
   { label: 'Training',   href: '/training'   },

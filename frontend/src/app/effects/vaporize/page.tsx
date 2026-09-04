@@ -19,7 +19,7 @@ import {
   ChevronRight,
   Sparkles,
 } from 'lucide-react'
-import { VaporizeTextCycle, Tag } from '@/components/VaporizeTextCycle'
+import VaporizeTextCycle, { Tag } from '@/components/VaporizeTextCycle'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
