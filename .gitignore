@@ -76,3 +76,4 @@ dmypy.json
 
 # Markdown docs
 *.md
+!README.md
