@@ -1,0 +1,155 @@
+# VCaaS Development Docker Compose
+# For local development with all services
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: vcaas-postgres
+    environment:
+      POSTGRES_DB: vcaas_db
+      POSTGRES_USER: vcaas_user
+      POSTGRES_PASSWORD: vcaas_pass
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vcaas_user -d vcaas_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: vcaas-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # VCaaS Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: vcaas-backend
+    environment:
+      - DEBUG=true
+      - DATABASE_URL=postgresql://vcaas_user:vcaas_pass@postgres:5432/vcaas_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev_secret_key_change_in_production
+      - ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - TTS_DEVICE=cpu
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/home/vcaas
+      - vcaas_data:/home/vcaas/data
+      - vcaas_logs:/home/vcaas/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # VCaaS Frontend (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: vcaas-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Celery Worker (for background tasks)
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: vcaas-celery-worker
+    command: celery -A app.core.celery worker --loglevel=info
+    environment:
+      - DEBUG=true
+      - DATABASE_URL=postgresql://vcaas_user:vcaas_pass@postgres:5432/vcaas_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev_secret_key_change_in_production
+    volumes:
+      - ./backend:/home/vcaas
+      - vcaas_data:/home/vcaas/data
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  # Flower (Celery monitoring)
+  flower:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: vcaas-flower
+    command: celery -A app.core.celery flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - DEBUG=true
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # Nginx (Development Proxy)
+  nginx:
+    image: nginx:alpine
+    container_name: vcaas-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  vcaas_data:
+  vcaas_logs:
+
+networks:
+  default:
+    name: vcaas-network

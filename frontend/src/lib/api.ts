@@ -404,3 +404,122 @@ export const updateProfile = async (profileData: any) => {
   const response = await api.put('/api/v1/auth/profile', profileData);
   return response.data;
 };
+
+// --- Licensing API ---
+
+export interface LicenseCreate {
+  voice_id: string;
+  name: string;
+  description?: string;
+  license_type: 'personal' | 'commercial' | 'enterprise' | 'educational' | 'non_profit' | 'custom';
+  price?: number;
+  currency?: string;
+  duration_days?: number;
+  usage_limit?: number;
+  territory?: string[];
+  allowed_use_cases?: string[];
+  restrictions?: Record<string, any>;
+}
+
+export interface LicenseResponse {
+  id: string;
+  voice_id: string;
+  name: string;
+  description?: string;
+  license_type: string;
+  price?: number;
+  currency: string;
+  duration_days?: number;
+  usage_limit?: number;
+  territory?: string[];
+  allowed_use_cases?: string[];
+  restrictions?: Record<string, any>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LicenseTokenRequest {
+  purchaser_email: string;
+  purchaser_name?: string;
+  purchase_amount?: number;
+  custom_terms?: Record<string, any>;
+}
+
+export interface LicenseTokenResponse {
+  token: string;
+  token_id: string;
+  license_id: string;
+  purchaser_email: string;
+  expires_at?: string;
+  usage_remaining?: number;
+  terms_url?: string;
+}
+
+export interface LicenseUsageResponse {
+  id: string;
+  license_id: string;
+  token_id?: string;
+  user_id: string;
+  voice_id: string;
+  text_length: number;
+  audio_duration?: number;
+  watermark_id?: string;
+  used_at: string;
+  metadata?: Record<string, any>;
+}
+
+export interface LicenseStats {
+  license_id: string;
+  license_name: string;
+  total_uses: number;
+  usage_limit?: number;
+  usage_remaining?: number;
+  unique_users: number;
+  total_text_length: number;
+  total_audio_duration: number;
+  total_revenue: number;
+  currency: string;
+  last_used?: string;
+  created_at: string;
+}
+
+export const createLicense = async (data: LicenseCreate): Promise<LicenseResponse> => {
+  const response = await api.post('/api/v1/licenses/', data);
+  return response.data;
+};
+
+export const getLicenses = async (filters?: { voice_id?: string; license_type?: string; is_active?: boolean }): Promise<LicenseResponse[]> => {
+  const response = await api.get('/api/v1/licenses/', { params: filters });
+  return response.data;
+};
+
+export const getLicense = async (id: string): Promise<LicenseResponse> => {
+  const response = await api.get(`/api/v1/licenses/${id}`);
+  return response.data;
+};
+
+export const updateLicense = async (id: string, data: Partial<LicenseCreate>): Promise<LicenseResponse> => {
+  const response = await api.put(`/api/v1/licenses/${id}`, data);
+  return response.data;
+};
+
+export const deleteLicense = async (id: string): Promise<{ message: string }> => {
+  const response = await api.delete(`/api/v1/licenses/${id}`);
+  return response.data;
+};
+
+export const generateLicenseToken = async (id: string, data: LicenseTokenRequest): Promise<LicenseTokenResponse> => {
+  const response = await api.post(`/api/v1/licenses/${id}/tokens`, data);
+  return response.data;
+};
+
+export const getLicenseUsage = async (id: string, limit: number = 50): Promise<LicenseUsageResponse[]> => {
+  const response = await api.get(`/api/v1/licenses/${id}/usage`, { params: { limit } });
+  return response.data;
+};
+
+export const getLicenseStats = async (id: string): Promise<LicenseStats> => {
+  const response = await api.get(`/api/v1/licenses/${id}/stats`);
+  return response.data;
+};

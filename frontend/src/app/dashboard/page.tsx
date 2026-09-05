@@ -14,7 +14,8 @@ import {
   Volume2,
   Zap,
   Shield,
-  Star
+  Star,
+  FileText
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -280,6 +281,16 @@ export default function DashboardPage() {
                     <BarChart3 className="w-4 h-4 text-[var(--text-1)]" />
                   </div>
                   <span className="font-medium text-sm text-[var(--text-1)]">View Analytics</span>
+                </Link>
+
+                <Link 
+                  href="/dashboard/licenses"
+                  className="flex items-center space-x-3 p-3 border border-transparent hover:border-[var(--border)] hover:bg-white/5 rounded-lg transition-all group"
+                >
+                  <div className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <FileText className="w-4 h-4 text-[var(--text-1)]" />
+                  </div>
+                  <span className="font-medium text-sm text-[var(--text-1)]">Manage Licenses</span>
                 </Link>
               </div>
             </motion.div>

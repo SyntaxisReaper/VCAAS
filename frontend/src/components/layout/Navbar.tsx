@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, User, Settings, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react'
+import { Menu, X, User, Settings, LogOut, ChevronDown, LayoutDashboard, FileText } from 'lucide-react'
 import { useAuthContext } from '@/components/providers/AuthProvider'
 
 const NAV_LINKS: { label: string; href: string; authRequired?: boolean }[] = [
@@ -193,6 +193,7 @@ export function Navbar() {
                       {/* Menu items */}
                       {[
                         { icon: LayoutDashboard, label: 'Dashboard',  href: '/dashboard' },
+                        { icon: FileText,        label: 'Licenses',    href: '/dashboard/licenses' },
                         { icon: User,            label: 'Profile',     href: '/profile'   },
                         { icon: Settings,        label: 'Settings',    href: '/settings'  },
                       ].map(({ icon: Icon, label, href }) => (
