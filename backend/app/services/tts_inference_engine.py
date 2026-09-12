@@ -176,9 +176,9 @@ class TTSInferenceEngine:
         self.logger = logging.getLogger(__name__)
         
         # Load voice registry
-        asyncio.create_task(self._load_voice_registry())
+        self._load_voice_registry()
     
-    async def _load_voice_registry(self):
+    def _load_voice_registry(self):
         """Load voice registry from file"""
         try:
             if self.voice_registry_path.exists():

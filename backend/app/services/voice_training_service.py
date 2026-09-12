@@ -14,7 +14,7 @@ from pathlib import Path
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db_session
+from app.core.database import SyncSessionLocal
 from app.models.user import User
 from app.models.voice import Voice
 from app.services.voice_processor import VoiceProcessor
@@ -60,7 +60,8 @@ class VoiceTrainingService:
         temp_file_path = job["temp_file_path"]
         
         try:
-            async with get_db_session() as db:
+            db = SyncSessionLocal()
+            try:
                 voice = db.query(Voice).filter(Voice.id == voice_id).first()
                 if not voice:
                     logger.error(f"Voice {voice_id} not found in DB")
@@ -97,15 +98,20 @@ class VoiceTrainingService:
                 db.commit()
                 
                 logger.info(f"Completed processing for voice {voice_id}")
+            finally:
+                db.close()
                 
         except Exception as e:
             logger.error(f"Training job {voice_id} failed: {e}")
             try:
-                async with get_db_session() as db:
+                db = SyncSessionLocal()
+                try:
                     voice = db.query(Voice).filter(Voice.id == voice_id).first()
                     if voice:
                         voice.status = "failed"
                         db.commit()
+                finally:
+                    db.close()
             except Exception as inner_e:
                 logger.error(f"Could not update voice status to failed: {inner_e}")
         finally:
