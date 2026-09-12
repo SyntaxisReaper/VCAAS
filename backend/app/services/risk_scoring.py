@@ -20,6 +20,8 @@ def sanitize_numpy(obj: Any) -> Any:
         import numpy as np  # type: ignore
         if isinstance(obj, np.ndarray):
             return sanitize_numpy(obj.tolist())
+        if isinstance(obj, np.bool_):
+            return bool(obj)
         if isinstance(obj, (np.floating,)):
             v = float(obj)
             return 0.0 if (math.isnan(v) or math.isinf(v)) else v
@@ -93,8 +95,8 @@ def combine_layer_results(
     return {
         "overall_authenticity_score": round(final_authenticity, 4),
         "verdict": verdict,
-        "is_authentic": final_authenticity > 0.5 and not watermark_found,
+        "is_authentic": bool(final_authenticity > 0.5 and not watermark_found),
         "confidence": round(total_weight, 4),  # how many layers contributed
         "layers": sanitize_numpy(layer_results),
-        "weights_used": weights,
+        "weights_used": sanitize_numpy(weights),
     }
