@@ -71,7 +71,7 @@ export function Footer() {
                   {[
                     { label: 'Documentation', href: '/docs' },
                     { label: 'Help Center',   href: '/help' },
-                    { label: 'API Reference', href: '/api' },
+                    { label: 'API Reference', href: '/docs' },
                   ].map(({ label, href }) => (
                     <Link key={label} href={href} style={{ fontSize: 14, color: 'var(--text-3)', textDecoration: 'none', transition: 'color 150ms ease' }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-3)' }}>
                       {label}

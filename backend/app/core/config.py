@@ -99,19 +99,21 @@ class Settings(BaseSettings):
         super().__init__(**kwargs)
         
         # Handle ALLOWED_ORIGINS completely manually (as object attribute, not pydantic field)
+        default_origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3001",
+            "http://127.0.0.1:3001",
+            "http://localhost:8000",
+            "https://vcaas-rbu8.vercel.app",
+            "https://vcaas.vercel.app"
+        ]
         origins_env = os.getenv('ALLOWED_ORIGINS')
         if origins_env:
-            object.__setattr__(self, 'ALLOWED_ORIGINS', [origin.strip() for origin in origins_env.split(',') if origin.strip()])
+            custom_origins = [origin.strip() for origin in origins_env.split(',') if origin.strip()]
+            object.__setattr__(self, 'ALLOWED_ORIGINS', list(set(default_origins + custom_origins)))
         else:
-            object.__setattr__(self, 'ALLOWED_ORIGINS', [
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
-                "http://localhost:3001",
-                "http://127.0.0.1:3001",
-                "http://localhost:8000",
-                "https://vcaas-rbu8.vercel.app",
-                "https://vcaas.vercel.app"
-            ])
+            object.__setattr__(self, 'ALLOWED_ORIGINS', default_origins)
 
     @model_validator(mode="after")
     def validate_security_defaults(self):

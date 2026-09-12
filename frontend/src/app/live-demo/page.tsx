@@ -37,7 +37,7 @@ interface Verdict {
 
 /* ─── Helpers ────────────────────────────────────────────────── */
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const WS_URL = API_BASE.replace(/^https?/, (protocol) => protocol === 'https' ? 'wss' : 'ws') + '/api/v1/verify/stream';
+const WS_URL = API_BASE.replace(/\/$/, '').replace(/^https?/, (protocol) => protocol === 'https' ? 'wss' : 'ws') + '/api/v1/verify/stream';
 
 function scoreColor(score: number): string {
   if (score >= 0.7) return 'var(--success)';

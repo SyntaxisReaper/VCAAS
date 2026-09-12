@@ -57,7 +57,7 @@ export default function ProfilePage() {
     role: '',
     joinDate: user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'Recently',
     bio: 'Content creator on VCaaS.',
-    avatar: user?.photoURL || '/api/placeholder/150/150',
+    avatar: user?.photoURL || 'https://ui-avatars.com/api/?name=User&background=random&size=150',
     plan: 'Basic',
     apiKey: 'vcaas_sk_********************',
     notifications: {
