@@ -255,7 +255,11 @@ class StreamSession:
             from .semantic_service import SemanticService
             svc = SemanticService()
             audio_f32 = audio.astype(np.float32) / 32768.0
-            result = svc.analyse_segment(audio_f32, self.sample_rate)
+            
+            # Use asyncio.to_thread to prevent blocking the event loop
+            # with synchronous Whisper transcription
+            result = await asyncio.to_thread(svc.analyse_segment, audio_f32, self.sample_rate)
+            
             self._last_semantic_result = result
         except Exception as exc:
             logger.warning("StreamSession: semantic check failed: %s", exc)

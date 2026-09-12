@@ -20,7 +20,7 @@ from ...services.antispoof import AntiSpoofDetector
 from ...services.audio_analysis import AudioAnalysisService
 from ...models.user import User
 from ...models.watermark import WatermarkVerification
-from .auth import get_current_user
+
 from ...schemas.watermark import (
     WatermarkVerificationResponse,
     ForensicAnalysisResponse
@@ -28,13 +28,7 @@ from ...schemas.watermark import (
 from fastapi.encoders import jsonable_encoder
 import numpy as np
 
-# MOCK USER FOR TESTING
-def mock_get_current_user():
-    from ...models.user import User
-    return User(id="test_user", is_premium=True)
-
 router = APIRouter(prefix="/verify", tags=["watermark-verification"])
-
 from .auth import get_current_user, get_optional_current_user
 
 @router.post("/watermark", response_model=WatermarkVerificationResponse)

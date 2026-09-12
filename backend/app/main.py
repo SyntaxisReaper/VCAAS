@@ -260,7 +260,7 @@ async def health_check():
         db_healthy = db_manager.health_check()
         
         # Check TTS service
-        tts_healthy = tts_service is not None and tts_service._model_loaded
+        tts_healthy = tts_service is not None and tts_service.inference_engine is not None
         
         # Overall health
         healthy = db_healthy and tts_healthy

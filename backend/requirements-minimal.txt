@@ -10,3 +10,4 @@ numpy>=1.26.0
 soundfile>=0.12.1
 wave>=0.0.2
 requests
+reedsolo 

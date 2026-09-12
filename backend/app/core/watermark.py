@@ -16,6 +16,7 @@ import json
 from datetime import datetime
 import logging
 import os
+import reedsolo
 
 logger = logging.getLogger(__name__)
 
@@ -169,25 +170,29 @@ class WatermarkEncoder:
         return full_payload
     
     def _spread_spectrum_embed(self, audio: np.ndarray, payload: bytes) -> np.ndarray:
-        """Embed payload using Echo Hiding for robust extraction with repetition."""
+        """Embed payload using Echo Hiding for robust extraction with repetition and ECC."""
+        # Add ECC
+        rs = reedsolo.RSCodec(10)
+        encoded_payload = bytes(rs.encode(payload))
+        
         # Convert payload to bits
-        payload_with_marker = payload + b'\xff\x00'
+        payload_with_marker = encoded_payload + b'\xff\x00'
         binary_payload = ''.join(format(b, '08b') for b in payload_with_marker)
         
         # Echo delays for 0 and 1 bits (in seconds)
-        # 20ms and 25ms are typical psychoacoustic delays that blend into speech
         delay_0 = int(0.020 * self.sample_rate)
         delay_1 = int(0.025 * self.sample_rate)
-        alpha = 0.5  # Echo amplitude
         
-        # Segment audio to embed bits
-        # Use a fixed segment length for each bit to allow repetition (e.g. 50ms)
+        # Segment length (e.g. 50ms)
         segment_length = int(0.05 * self.sample_rate)
         
         required_bits = len(binary_payload)
         watermark_duration = required_bits * segment_length
         
         watermarked_audio = audio.copy()
+        
+        # Calculate global RMS for psychoacoustic scaling
+        global_rms = np.sqrt(np.mean(audio**2)) + 1e-6
         
         # Repeat the payload across the audio
         num_repeats = max(1, len(audio) // watermark_duration)
@@ -206,6 +211,12 @@ class WatermarkEncoder:
                 
                 # Embed echo in this segment
                 segment = audio[start:end]
+                
+                # Psychoacoustic shaping: scale alpha based on local RMS vs global RMS
+                local_rms = np.sqrt(np.mean(segment**2)) + 1e-6
+                # Range 0.3 to 0.7 depending on relative loudness
+                alpha = np.clip(0.3 + 0.4 * (local_rms / global_rms), 0.3, 0.7)
+                
                 echo = np.zeros_like(segment)
                 if delay < len(segment):
                     echo[delay:] = segment[:-delay]
@@ -358,48 +369,66 @@ class WatermarkDecoder:
             return "unknown_id"
     
     def _spread_spectrum_extract(self, audio: np.ndarray) -> list[bytes]:
-        """Extract all candidate payloads from Echo Hiding watermark using cepstrum analysis."""
+        """Extract all candidate payloads from Echo Hiding watermark using sliding-window cepstrum analysis."""
         try:
             delay_0 = int(0.020 * self.sample_rate)
             delay_1 = int(0.025 * self.sample_rate)
-            
-            # The segment length is fixed in embedding
             segment_length = int(0.05 * self.sample_rate)
             
-            max_bits = len(audio) // segment_length
+            all_candidates = []
             
-            binary_payload = ""
-            for i in range(max_bits):
-                start = i * segment_length
-                end = start + segment_length
-                segment = audio[start:end]
+            # Sliding window offsets: try every 10ms (0 to 40ms)
+            step_samples = int(0.01 * self.sample_rate)
+            offsets = list(range(0, segment_length, step_samples))
+            
+            rs = reedsolo.RSCodec(10)
+            
+            for offset in offsets:
+                max_bits = (len(audio) - offset) // segment_length
+                binary_payload = ""
                 
-                if len(segment) < segment_length:
-                    break
-                
-                # Compute real cepstrum
-                spectrum = np.fft.fft(segment)
-                log_spectrum = np.log(np.abs(spectrum) + 1e-10)
-                cepstrum = np.real(np.fft.ifft(log_spectrum))
-                
-                # Check for peaks near delay_0 and delay_1
-                peak_0 = max(cepstrum[delay_0-1:delay_0+2])
-                peak_1 = max(cepstrum[delay_1-1:delay_1+2])
-                
-                if peak_1 > peak_0:
-                    binary_payload += '1'
-                else:
-                    binary_payload += '0'
+                for i in range(max_bits):
+                    start = offset + i * segment_length
+                    end = start + segment_length
+                    segment = audio[start:end]
                     
-            byte_array = bytearray()
-            for i in range(0, len(binary_payload) - 7, 8):
-                byte_str = binary_payload[i:i+8]
-                byte_val = int(byte_str, 2)
-                byte_array.append(byte_val)
+                    if len(segment) < segment_length:
+                        break
+                    
+                    # Compute real cepstrum
+                    spectrum = np.fft.fft(segment)
+                    log_spectrum = np.log(np.abs(spectrum) + 1e-10)
+                    cepstrum = np.real(np.fft.ifft(log_spectrum))
+                    
+                    # Check for peaks near delay_0 and delay_1
+                    peak_0 = max(cepstrum[delay_0-1:delay_0+2])
+                    peak_1 = max(cepstrum[delay_1-1:delay_1+2])
+                    
+                    if peak_1 > peak_0:
+                        binary_payload += '1'
+                    else:
+                        binary_payload += '0'
+                        
+                byte_array = bytearray()
+                for i in range(0, len(binary_payload) - 7, 8):
+                    byte_str = binary_payload[i:i+8]
+                    byte_val = int(byte_str, 2)
+                    byte_array.append(byte_val)
+                    
+                # Split byte array by the marker \xff\x00 to get all candidate payloads
+                candidates = byte_array.split(b'\xff\x00')
                 
-            # Split byte array by the marker \xff\x00 to get all candidate payloads
-            candidates = byte_array.split(b'\xff\x00')
-            return [bytes(c) for c in candidates if c]
+                for c in candidates:
+                    if not c:
+                        continue
+                    try:
+                        decoded = bytes(rs.decode(c)[0])
+                        all_candidates.append(decoded)
+                    except reedsolo.ReedSolomonError:
+                        # Also append raw in case it wasn't ECC encoded (backward compatibility)
+                        all_candidates.append(bytes(c))
+                        
+            return all_candidates
             
         except Exception as e:
             logger.error(f"Echo Hiding extraction error: {e}")

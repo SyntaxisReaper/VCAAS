@@ -8,11 +8,15 @@ import json
 import time
 import hashlib
 import asyncio
+import io
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 import logging
+
+from .xtts_zero_shot import ZeroShotXTTS
+from .xtts_finetuned import FinetunedXTTS
 
 # Audio processing imports (simulated for now, would be actual libraries in production)
 try:
@@ -272,22 +276,53 @@ class TTSInferenceEngine:
     
     async def _synthesize_audio(self, request: SynthesisRequest, model_data: Dict[str, Any], 
                               voice_profile: Dict[str, Any]) -> SynthesisResult:
-        """Core audio synthesis logic"""
+        """Core audio synthesis logic using XTTS"""
         
         # Text preprocessing
         processed_text = await self._preprocess_text(request.text)
         
-        # Generate mel spectrogram (simulated)
-        mel_spectrogram = await self._text_to_mel(processed_text, model_data, request)
+        # Determine if zero-shot or fine-tuned
+        model_type = voice_profile.get('model_info', {}).get('type', 'zero_shot')
+        speaker_wav_path = voice_profile.get('model_info', {}).get('speaker_wav_path')
         
-        # Generate audio from mel spectrogram (simulated)
-        audio_data = await self._mel_to_audio(mel_spectrogram, model_data, request)
+        if not speaker_wav_path or not os.path.exists(speaker_wav_path):
+            # Fallback to generating a sine wave if reference audio is missing
+            self.logger.warning(f"Speaker reference missing for voice {request.voice_id}. Generating sine wave.")
+            audio_data = await self._generate_sine_wave(request)
+            sample_rate = request.sample_rate
+        else:
+            try:
+                language = voice_profile.get('voice_characteristics', {}).get('language', 'en')
+                
+                # Run XTTS in a separate thread since it's CPU/GPU blocking
+                if model_type == 'fine_tuned':
+                    model_dir = voice_profile.get('model_info', {}).get('model_dir')
+                    if model_dir and os.path.exists(model_dir):
+                        fxtts = FinetunedXTTS(model_dir)
+                        audio_data = await asyncio.to_thread(
+                            fxtts.synthesize, processed_text, speaker_wav_path, language
+                        )
+                    else:
+                        self.logger.warning(f"Finetuned model dir missing for {request.voice_id}. Falling back to zero-shot.")
+                        xtts = ZeroShotXTTS.instance()
+                        audio_data = await asyncio.to_thread(
+                            xtts.synthesize, processed_text, speaker_wav_path, language
+                        )
+                else:
+                    xtts = ZeroShotXTTS.instance()
+                    audio_data = await asyncio.to_thread(
+                        xtts.synthesize, processed_text, speaker_wav_path, language
+                    )
+                sample_rate = 22050  # Default XTTS rate
+            except Exception as e:
+                self.logger.error(f"XTTS synthesis failed: {e}. Generating sine wave fallback.")
+                audio_data = await self._generate_sine_wave(request)
+                sample_rate = request.sample_rate
         
         # Post-processing
         audio_data = await self._postprocess_audio(audio_data, request)
         
         # Calculate duration
-        sample_rate = request.sample_rate
         duration = len(audio_data) / (sample_rate * 2)  # 16-bit audio
         
         # Generate metadata
@@ -303,7 +338,7 @@ class TTSInferenceEngine:
                 'quality': request.quality
             },
             'model_info': {
-                'architecture': model_data['architecture'],
+                'type': model_type,
                 'quality_score': voice_profile.get('quality_metrics', {}).get('overall_score', 0.8)
             },
             'generation_timestamp': datetime.now().isoformat()
@@ -317,6 +352,16 @@ class TTSInferenceEngine:
             metadata=metadata,
             generation_time=time.time()
         )
+        
+    async def _generate_sine_wave(self, request: SynthesisRequest) -> bytes:
+        import soundfile as sf
+        sample_rate = request.sample_rate
+        duration = max(1.0, min(10.0, len(request.text) * 0.1))
+        t = np.linspace(0, duration, int(sample_rate * duration), endpoint=False)
+        audio = 0.5 * np.sin(2 * np.pi * 440 * t)
+        buf = io.BytesIO()
+        sf.write(buf, audio, samplerate=sample_rate, format="WAV")
+        return buf.getvalue()
     
     async def _preprocess_text(self, text: str) -> str:
         """Preprocess text for synthesis"""

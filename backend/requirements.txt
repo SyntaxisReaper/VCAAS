@@ -59,7 +59,7 @@ loguru==0.7.2
 sentry-sdk[fastapi]==1.38.0
 
 # Speaker verification / anti-spoof (optional, enables ECAPA)
-speechbrain==0.5.16
+speechbrain>=1.0.0
 faster-whisper>=0.10.0
 
 # Development and testing
@@ -69,3 +69,7 @@ httpx==0.25.2
 black==23.11.0
 isort==5.12.0
 mypy==1.7.1
+reedsolo 
+pydub 
+scikit-learn>=1.3.0
+joblib>=1.3.0

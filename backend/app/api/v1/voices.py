@@ -15,6 +15,7 @@ import uuid
 from ...core.database import get_db
 from ...services.voice_processor import VoiceProcessor
 from ...services.audio_processor import AudioProcessor
+from ...services.voice_training_service import voice_training_service
 from ...models.user import User
 from ...models.voice import Voice
 from .auth import get_current_user
@@ -72,39 +73,28 @@ async def upload_voice(
         # Generate unique voice ID
         voice_id = f"voice_{uuid.uuid4().hex[:12]}"
         
-        # Initialize voice processor
-        voice_processor = VoiceProcessor()
-        
-        # Preprocess audio (denoise, normalize, extract features)
-        processed_audio_path = await voice_processor.preprocess_audio(
-            temp_file_path, 
-            voice_id
-        )
-        
-        # Extract speaker embedding
-        speaker_embedding = await voice_processor.extract_speaker_embedding(
-            processed_audio_path
-        )
-        
-        # Create voice record in database
+        # Create voice record in database as pending/processing
         voice = Voice(
             id=voice_id,
             user_id=current_user.id,
             name=name or f"Voice {datetime.now().strftime('%Y%m%d_%H%M%S')}",
             description=description,
             original_filename=file.filename,
-            file_path=processed_audio_path,
-            speaker_embedding=speaker_embedding.tolist(),  # Store as JSON array
+            file_path=None,
+            speaker_embedding=None,
             duration=audio_info['duration'],
             sample_rate=audio_info['sample_rate'],
             file_size=audio_info['file_size_bytes'],
-            status='ready',
+            status='pending',
             quality_score=audio_info.get('quality_score', 0.85)
         )
         
         db.add(voice)
         db.commit()
         db.refresh(voice)
+        
+        # Start background processing
+        await voice_training_service.start_training(voice.id, temp_file_path)
         
         return VoiceUploadResponse(
             voice_id=voice.id,
@@ -113,13 +103,14 @@ async def upload_voice(
             duration=voice.duration,
             quality_score=voice.quality_score,
             upload_time=voice.created_at,
-            next_steps="Voice is ready for cloning. You can now use it for TTS generation."
+            next_steps="Voice is currently processing. You can check its status later."
         )
         
-    finally:
-        # Clean up temporary file
+    except Exception as e:
+        # Clean up temporary file only on immediate error
         if os.path.exists(temp_file_path):
             os.unlink(temp_file_path)
+        raise e
 
 @router.get("/", response_model=List[VoiceResponse])
 async def list_voices(

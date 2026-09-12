@@ -12,10 +12,13 @@ import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import json
 
 import numpy as np
 import soundfile as sf
 from loguru import logger
+
+from .tts_inference_engine import TTSInferenceEngine, SynthesisRequest
 
 
 class TTSService:
@@ -33,8 +36,16 @@ class TTSService:
             "cancelled": 0,
             "total_duration": 0.0,
         }
-
-    # Optional lifecycle hooks (used by main.py)
+        
+        # Initialize inference engine
+        registry_path = "data/voice_registry.json"
+        if not os.path.exists("data"):
+            os.makedirs("data")
+        if not os.path.exists(registry_path):
+            with open(registry_path, "w") as f:
+                json.dump({"voices": {}}, f)
+                
+        self.inference_engine = TTSInferenceEngine(registry_path)
     async def initialize(self) -> None:
         self._model_loaded = True
 
@@ -142,24 +153,40 @@ class TTSService:
         voice_params: Optional[Dict[str, Any]] = None,
         job_id: Optional[str] = None,
     ) -> str:
-        """Generate a small WAV file and return its path."""
+        """Generate a WAV file using the inference engine and return its path."""
         voice_params = voice_params or {}
         speed = float(voice_params.get("speed", 1.0))
         pitch = float(voice_params.get("pitch", 0.0))
-        duration = max(1.0, min(30.0, len(text) * 0.06 / max(speed, 0.1)))
-        sr = 22050
-        t = np.linspace(0, duration, int(sr * duration), endpoint=False)
-        base = 180.0 + (np.mean(speaker_embedding) * 50.0 if speaker_embedding else 0.0) + pitch * 50.0
-        wave = (
-            0.3 * np.sin(2 * np.pi * base * t)
-            + 0.2 * np.sin(2 * np.pi * (base * 2) * t)
-            + 0.1 * np.sin(2 * np.pi * (base * 3) * t)
+        
+        request = SynthesisRequest(
+            text=text,
+            voice_id=voice_id,
+            output_format="wav",
+            speed=speed,
+            pitch_shift=pitch,
+            emotion=voice_params.get("emotion", "neutral")
         )
-        wave += np.random.normal(0, 0.01, size=wave.shape)
-        wave = (wave / (np.max(np.abs(wave)) + 1e-6) * 0.8).astype(np.float32)
-
+        
+        # We need to make sure the voice is in the registry or temporarily add it
+        if voice_id not in self.inference_engine.voice_registry:
+            # Assuming a zero-shot model with the given speaker_embedding for now
+            # The actual endpoints should populate the registry
+            self.inference_engine.voice_registry[voice_id] = {
+                "display_name": f"Voice {voice_id}",
+                "model_info": {
+                    "type": "zero_shot",
+                    # We might not have the wav path here if it's passed as embedding,
+                    # but our engine needs a wav path. For now, it will fallback to sine wave
+                    # if speaker_wav_path is missing.
+                }
+            }
+            
+        result = await self.inference_engine.synthesize_speech(request)
+        
         out_path = self._output_dir / f"{job_id or 'synth'}_{voice_id}.wav"
-        sf.write(str(out_path), wave, sr)
+        with open(out_path, "wb") as f:
+            f.write(result.audio_data)
+            
         return str(out_path)
 
     async def _process_job(self, job_id: str) -> None:

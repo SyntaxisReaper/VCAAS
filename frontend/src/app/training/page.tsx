@@ -81,24 +81,61 @@ export default function VoiceTrainingPage() {
     return `${(bytes / Math.pow(k, i)).toFixed(1)} ${s[i]}`
   }
 
+  const [voiceId, setVoiceId] = useState<string | null>(null)
+  const [trainingStatus, setTrainingStatus] = useState<string | null>(null)
+
   const handleAnalyze = async () => {
     if (audioFiles.length === 0) return
     setIsUploading(true)
     setSpectralOk(null)
     setSpectralData(null)
+    setTrainingStatus('pending')
     try {
+      // Step 1: Upload the voice
       const fd = new FormData()
       fd.append('file', audioFiles[0].file)
-      const res = await axios.post(`${API}/api/v1/verify/spectral-graphs`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      // Name the voice based on user input or file name
+      const uploadRes = await axios.post(`${API}/api/v1/voices/upload?name=${encodeURIComponent(voiceName || audioFiles[0].name)}`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       })
-      const ok = !!res.data?.mel_db
-      setSpectralOk(ok)
-      setSpectralData(res.data)
-    } catch {
+      
+      const vId = uploadRes.data.voice_id
+      setVoiceId(vId)
+
+      // Step 2: Poll status
+      const poll = async () => {
+        try {
+          const statusRes = await axios.get(`${API}/api/v1/voices/${vId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          })
+          const status = statusRes.data.status
+          setTrainingStatus(status)
+          
+          if (status === 'ready') {
+            setSpectralOk(true)
+            setSpectralData(statusRes.data)
+            setIsUploading(false)
+          } else if (status === 'failed') {
+            setSpectralOk(false)
+            setIsUploading(false)
+          } else {
+            // Still processing/pending, poll again
+            setTimeout(poll, 2000)
+          }
+        } catch (err) {
+          console.error('Polling error', err)
+          setSpectralOk(false)
+          setIsUploading(false)
+        }
+      }
+      
+      // Start polling
+      setTimeout(poll, 2000)
+      
+    } catch (err) {
       setSpectralOk(false)
-    } finally {
       setIsUploading(false)
+      setTrainingStatus('failed')
     }
   }
 
@@ -277,17 +314,17 @@ export default function VoiceTrainingPage() {
                     )}
                     <div>
                       <p className={`text-sm font-semibold ${spectralOk ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {spectralOk ? 'Spectral Analysis Passed' : 'Analysis Failed'}
+                        {spectralOk ? 'Voice Training Complete' : 'Training Failed'}
                       </p>
                       <p className={`text-xs mt-1 ${spectralOk ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
                         {spectralOk
-                          ? `Spectral features successfully extracted for "${voiceName}". Ready to submit for training.`
-                          : 'Could not extract valid spectral features. Ensure the audio is clean and properly formatted.'}
+                          ? `The voice clone "${voiceName || audioFiles[0]?.name}" is ready to be used in Text-to-Speech.`
+                          : 'Could not complete training. Ensure the audio is clean and properly formatted.'}
                       </p>
                       {spectralOk && (
-                        <button className="mt-4 inline-flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-medium px-4 py-2 rounded-lg transition-colors">
-                          Submit for Training <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
+                        <Link href="/playground" className="mt-4 inline-flex items-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-medium px-4 py-2 rounded-lg transition-colors">
+                          Go to TTS Playground <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
                       )}
                     </div>
                   </motion.div>
