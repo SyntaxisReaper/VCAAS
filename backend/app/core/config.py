@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
     DEBUG: bool = Field(default=False, env="DEBUG")
     MOCK_AUTH_ENABLED: bool = Field(default=False, env="MOCK_AUTH_ENABLED")
-    PUBLIC_STREAMING_ENABLED: bool = Field(default=False, env="PUBLIC_STREAMING_ENABLED")
+    PUBLIC_STREAMING_ENABLED: bool = Field(default=True, env="PUBLIC_STREAMING_ENABLED")
     
     # API Configuration
     API_V1_STR: str = "/api"
@@ -122,8 +122,6 @@ class Settings(BaseSettings):
                 raise ValueError("SECRET_KEY must be explicitly configured outside development")
             if self.MOCK_AUTH_ENABLED:
                 raise ValueError("MOCK_AUTH_ENABLED cannot be enabled outside development")
-            if self.PUBLIC_STREAMING_ENABLED:
-                raise ValueError("PUBLIC_STREAMING_ENABLED cannot be enabled outside development")
         return self
 
 
