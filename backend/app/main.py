@@ -19,6 +19,9 @@ from .api.v1 import users as users_routes
 from .core.config import settings
 from .core.database import create_tables_sync, db_manager
 from .services.tts_service import TTSService
+from .core.security import set_security_config
+
+set_security_config(settings.SECRET_KEY, settings.JWT_ALGORITHM)
 
 # Configure logging
 logging.basicConfig(
@@ -83,8 +86,8 @@ app = FastAPI(
     title="VCaaS - Voice Clone as a Service",
     description="Creator-first, ethical voice cloning with watermarking, licensing, and API access",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if settings.ENVIRONMENT == "development" else None,
+    redoc_url="/redoc" if settings.ENVIRONMENT == "development" else None,
     lifespan=lifespan
 )
 
@@ -238,7 +241,7 @@ async def root():
             "Usage analytics",
             "Watermark verification"
         ],
-        "docs_url": "/docs",
+        "docs_url": "/docs" if settings.ENVIRONMENT == "development" else None,
         "api_version": "v1",
         "endpoints": {
             "authentication": "/api/v1/auth",
@@ -277,7 +280,7 @@ async def health_check():
         return {
             "status": "unhealthy",
             "timestamp": time.time(),
-            "error": str(e),
+            "error": str(e) if settings.DEBUG else "Health check failed",
             "version": "1.0.0"
         }
 

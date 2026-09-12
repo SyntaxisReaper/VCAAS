@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, model_validator
 from typing import List
 import os
 
@@ -9,12 +9,14 @@ class Settings(BaseSettings):
     
     # Environment
     ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
-    DEBUG: bool = Field(default=True, env="DEBUG")
+    DEBUG: bool = Field(default=False, env="DEBUG")
+    MOCK_AUTH_ENABLED: bool = Field(default=False, env="MOCK_AUTH_ENABLED")
+    PUBLIC_STREAMING_ENABLED: bool = Field(default=False, env="PUBLIC_STREAMING_ENABLED")
     
     # API Configuration
     API_V1_STR: str = "/api"
     PROJECT_NAME: str = "Voice Clone Platform"
-    SECRET_KEY: str = Field(default="dev-secret-key-change-in-production-must-be-32-chars-min", env="SECRET_KEY")
+    SECRET_KEY: str = Field(default="", env="SECRET_KEY")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days
     
@@ -63,6 +65,9 @@ class Settings(BaseSettings):
     # Watermarking
     WATERMARK_STRENGTH: float = 0.1
     WATERMARK_KEY: str = Field(default="dev-watermark-key-32-bytes-padding", env="WATERMARK_KEY")
+
+    # Host allowlist is required when TrustedHostMiddleware is enabled.
+    ALLOWED_HOSTS: List[str] = Field(default_factory=lambda: ["localhost", "127.0.0.1"], env="ALLOWED_HOSTS")
     
     # Celery Configuration
     CELERY_BROKER_URL: str = Field(default="redis://localhost:6379/0", env="CELERY_BROKER_URL")
@@ -107,6 +112,17 @@ class Settings(BaseSettings):
                 "https://vcaas-rbu8.vercel.app",
                 "https://vcaas.vercel.app"
             ])
+
+    @model_validator(mode="after")
+    def validate_security_defaults(self):
+        if self.ENVIRONMENT.lower() not in {"development", "test"}:
+            if not self.SECRET_KEY or self.SECRET_KEY.startswith("dev-"):
+                raise ValueError("SECRET_KEY must be explicitly configured outside development")
+            if self.MOCK_AUTH_ENABLED:
+                raise ValueError("MOCK_AUTH_ENABLED cannot be enabled outside development")
+            if self.PUBLIC_STREAMING_ENABLED:
+                raise ValueError("PUBLIC_STREAMING_ENABLED cannot be enabled outside development")
+        return self
 
 
 # Create settings instance

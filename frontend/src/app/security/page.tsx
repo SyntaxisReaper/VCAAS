@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { ShieldCheck, Lock, EyeOff, Server, Fingerprint, Zap, ArrowRight } from 'lucide-react'
+import { ShieldCheck, Lock, EyeOff, Server, Fingerprint, Zap, ArrowRight, UploadCloud, RotateCcw, CheckCircle2, AlertCircle } from 'lucide-react'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -23,8 +23,8 @@ export default function SecurityOverview() {
     },
     {
       icon: EyeOff,
-      title: 'Zero Data Retention',
-      desc: 'We do not store or use your audio uploads or inference prompts for model training. Voice clones are encrypted at rest and can be permanently purged instantly at your request.',
+      title: 'Controlled Data Retention',
+      desc: 'Audio and prompts are processed according to the active retention policy. We do not use customer voice references to train foundational models, and saved assets can be deleted through the account workflow.',
       accent: 'violet',
     },
     {
@@ -35,8 +35,8 @@ export default function SecurityOverview() {
     },
     {
       icon: Server,
-      title: 'SOC 2 Type II Compliant',
-      desc: 'Our infrastructure is regularly audited by independent third-party security firms. Data is encrypted in transit (TLS 1.3) and at rest (AES-256).',
+      title: 'Security Controls in Progress',
+      desc: 'The platform is being built with TLS, encrypted storage, access controls, audit logs, and operator governance. Compliance certifications should only be claimed after an independent audit is complete.',
       accent: 'amber',
     },
   ]
@@ -79,11 +79,11 @@ export default function SecurityOverview() {
 
           <motion.p variants={fadeUp} className="text-[var(--text-2)] text-lg max-w-2xl mx-auto leading-relaxed">
             We are building the future of generative audio, and we take the responsibility seriously.
-            Our military-grade security architecture protects both our users and the public.
+            Our layered security architecture is designed to protect users, operators, and the public.
           </motion.p>
 
           <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-6 mt-12">
-            {['TLS 1.3 in transit', 'AES-256 at rest', 'Zero-knowledge keys', 'SOC 2 Type II'].map((badge) => (
+            {['TLS in transit', 'Encrypted storage', 'Consent controls', 'Audit-ready design'].map((badge) => (
               <div key={badge} className="flex items-center gap-2 text-sm text-[var(--text-2)]">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 {badge}
@@ -140,7 +140,7 @@ export default function SecurityOverview() {
             <h2 className="text-2xl font-bold text-[var(--text-1)]">6-Layer Deepfake Analysis</h2>
           </div>
           <p className="text-[var(--text-2)] mb-8 text-sm max-w-2xl relative z-10">
-            Upload any audio clip to run it through our multi-layer defense mechanism. We analyze acoustics, prosody, paralinguistics, semantics, and verify cryptographic watermarks in real-time.
+            Upload an audio clip to inspect layered evidence. The result is a confidence-based assessment, not a guarantee of human or synthetic origin.
           </p>
           <DeepfakeAnalyzer />
         </motion.div>
@@ -175,6 +175,32 @@ function DeepfakeAnalyzer() {
   const [result, setResult] = React.useState<any>(null)
   const [error, setError] = React.useState<string | null>(null)
 
+  const handleFileChange = (nextFile: File | null) => {
+    setResult(null)
+    setError(null)
+    if (!nextFile) {
+      setFile(null)
+      return
+    }
+    if (!nextFile.type.startsWith('audio/')) {
+      setFile(null)
+      setError('Choose an audio file such as WAV, MP3, FLAC, or OGG.')
+      return
+    }
+    if (nextFile.size > 100 * 1024 * 1024) {
+      setFile(null)
+      setError('This file is larger than the 100 MB analysis limit.')
+      return
+    }
+    setFile(nextFile)
+  }
+
+  const reset = () => {
+    setFile(null)
+    setResult(null)
+    setError(null)
+  }
+
   const handleVerify = async () => {
     if (!file) return
     setLoading(true)
@@ -193,34 +219,13 @@ function DeepfakeAnalyzer() {
 
   return (
     <div className="space-y-6 relative z-10">
-      <div className="flex flex-col md:flex-row items-center gap-4">
-        <input
-          type="file"
-          accept="audio/*"
-          onChange={e => setFile(e.target.files?.[0] || null)}
-          className="block w-full max-w-sm text-sm text-[var(--text-2)]
-            file:mr-4 file:py-3 file:px-5
-            file:rounded-xl file:border-0
-            file:text-sm file:font-semibold
-            file:bg-[var(--surface-2)] file:text-[var(--text-1)]
-            hover:file:bg-[var(--surface-3)] transition-colors cursor-pointer"
-        />
-        <button
-          onClick={handleVerify}
-          disabled={!file || loading}
-          className="bg-white text-black font-medium px-8 py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Analyzing...' : 'Run Analysis'}
-        </button>
-      </div>
-
       {loading && (
         <div className="space-y-2">
-          {['Anti-Spoof', 'Prosody', 'Paralinguistic', 'Semantic', 'Watermark'].map((layer, i) => (
+          {['Acoustic', 'Speaker', 'Prosody', 'Semantic', 'Watermark'].map((layer, i) => (
             <motion.div
               key={layer}
               initial={{ width: '0%' }}
-              animate={{ width: `${30 + Math.random() * 50}%` }}
+              animate={{ width: `${48 + i * 9}%` }}
               transition={{ delay: i * 0.3, duration: 1.5, ease: 'easeOut' }}
               className="h-1 bg-[var(--accent)] rounded-full opacity-60"
             />
@@ -228,6 +233,27 @@ function DeepfakeAnalyzer() {
           <p className="text-xs text-[var(--text-3)] mt-2">Running 6-layer analysis…</p>
         </div>
       )}
+
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/60 p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <label className="flex-1 flex items-center gap-3 rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--surface-1)] px-4 py-4 cursor-pointer hover:border-[var(--accent)] transition-colors">
+            <UploadCloud className="h-5 w-5 text-[var(--accent)] shrink-0" />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium truncate">{file ? file.name : 'Choose an audio file'}</span>
+              <span className="block text-xs text-[var(--text-3)] mt-1">WAV, MP3, FLAC, or OGG · up to 100 MB</span>
+            </span>
+            <input type="file" accept="audio/*" onChange={e => handleFileChange(e.target.files?.[0] || null)} className="sr-only" />
+          </label>
+          <button
+            onClick={handleVerify}
+            disabled={!file || loading}
+            className="shrink-0 bg-white text-black font-medium px-6 py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Analyzing…' : 'Run analysis'}
+          </button>
+        </div>
+        {file && !loading && !result && !error && <p className="text-xs text-[var(--text-3)] mt-3">The analysis usually takes up to two minutes for a first run.</p>}
+      </div>
 
       {error && (
         <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm">{error}</div>
@@ -239,20 +265,31 @@ function DeepfakeAnalyzer() {
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8"
         >
-          <div className="col-span-full mb-4">
-            <h3 className="text-xl font-bold text-[var(--text-1)] flex items-center gap-2 mb-2">
-              Final Decision:&nbsp;
-              <span className={`tracking-wider ${result.verdict?.includes('Human') ? 'text-emerald-400' : result.verdict?.includes('Watermarked') ? 'text-blue-400' : 'text-red-400'}`}>
-                {result.verdict}
-              </span>
-            </h3>
-            <div className="inline-block px-3 py-1 bg-[var(--surface-2)] rounded-lg text-sm font-medium text-[var(--text-2)] border border-[var(--border)]">
-              Overall Authenticity: {((result.overall_authenticity_score || 0) * 100).toFixed(1)}%
+          <div className="col-span-full mb-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-3)] mb-2">Assessment</p>
+                <h3 className="text-xl font-bold text-[var(--text-1)] flex items-center gap-2">
+                  {result.verdict || 'Analysis complete'}
+                  {result.watermark_detected && <span className="text-xs font-medium text-blue-400">Watermark detected</span>}
+                </h3>
+              </div>
+              <div className="text-left sm:text-right shrink-0">
+                <p className="text-2xl font-bold text-[var(--text-1)]">{((result.overall_authenticity_score || result.overall_authenticity || 0) * 100).toFixed(1)}%</p>
+                <p className="text-xs text-[var(--text-3)]">overall authenticity score</p>
+              </div>
             </div>
+            <div className="mt-4 flex flex-wrap gap-3 text-xs text-[var(--text-2)]">
+              <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Review each layer below</span>
+              <span className="inline-flex items-center gap-1.5"><AlertCircle className="h-3.5 w-3.5 text-amber-400" /> Unavailable layers reduce confidence</span>
+            </div>
+            <button onClick={reset} className="mt-4 inline-flex items-center gap-2 text-xs font-medium text-[var(--text-2)] hover:text-[var(--text-1)] transition-colors">
+              <RotateCcw className="h-3.5 w-3.5" /> Analyze another file
+            </button>
           </div>
 
           <LayerCard title="1. Anti-Spoof (Acoustics)" data={result.layers?.layer1_antispoof} scoreField="spoof_score" invert />
-          <LayerCard title="2. Speaker Identity" data={result.layers?.layer2_speaker} scoreField="similarity_score" />
+          <LayerCard title="2. Speaker Identity" data={result.layers?.layer2_speaker_consistency || result.layers?.layer2_speaker} scoreField="similarity_score" />
           <LayerCard title="3. Prosody (Pitch)" data={result.layers?.layer3_prosody} scoreField="authenticity_score" />
           <LayerCard title="4. Paralinguistic" data={result.layers?.layer4_paralinguistic} scoreField="authenticity_score" />
           <LayerCard title="5. Semantic (Whisper)" data={result.layers?.layer5_semantic} scoreField="authenticity_score" />
@@ -286,7 +323,7 @@ function LayerCard({ title, data, scoreField, invert = false }: { title: string;
       </div>
     )
   }
-  const score = data[scoreField] || 0
+  const score = typeof data[scoreField] === 'number' ? data[scoreField] : 0
   const displayScore = invert ? 1 - score : score
   const isSuspicious = displayScore < 0.5
 
@@ -302,8 +339,11 @@ function LayerCard({ title, data, scoreField, invert = false }: { title: string;
           transition={{ duration: 0.8, ease: 'easeOut' }}
         />
       </div>
-      <div className="text-xs text-[var(--text-3)] font-mono overflow-auto max-h-20 bg-[var(--surface-1)] p-2 rounded">
-        {JSON.stringify(data.details || data.features || {}, null, 2)}
+      <div className="text-xs text-[var(--text-3)] overflow-auto max-h-20 bg-[var(--surface-1)] p-2 rounded space-y-1">
+        {Object.entries(data)
+          .filter(([key, value]) => !['details', 'features'].includes(key) && ['string', 'number', 'boolean'].includes(typeof value))
+          .slice(0, 3)
+          .map(([key, value]) => <div key={key} className="flex justify-between gap-3"><span>{key.replace(/_/g, ' ')}</span><strong className="text-[var(--text-2)] truncate">{String(value)}</strong></div>)}
       </div>
     </div>
   )

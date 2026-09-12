@@ -14,14 +14,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 import bcrypt
+from .config import settings
 
 # Password hashing context (removed passlib)
 # pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Default settings (should be overridden by config)
-SECRET_KEY = "vcaas_secret_key_change_in_production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 def set_security_config(secret_key: str, algorithm: str = "HS256"):
     """Set global security configuration."""

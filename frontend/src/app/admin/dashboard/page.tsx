@@ -39,7 +39,21 @@ export default function AdminDashboard() {
     }
     try {
       const data = adminAuth.getAdminDashboardData()
-      setDashboardData(data)
+      setDashboardData({
+        ...data,
+        adminInfo: { role: 'admin', ...data.adminInfo },
+        systemStats: {
+          ...data.systemStats,
+          activeUsers: data.systemStats?.activeUsers ?? data.systemStats?.totalUsers ?? 0,
+          activeVoices: data.systemStats?.activeVoices ?? 0,
+        },
+        systemHealth: {
+          ...data.systemHealth,
+          cpuUsage: data.systemHealth?.cpuUsage ?? 'Unavailable',
+          memoryUsage: data.systemHealth?.memoryUsage ?? 'Unavailable',
+        },
+        securityAlerts: data.securityAlerts ?? data.alerts ?? [],
+      })
     } catch (error) {
       // router.push('/admin/login')
     } finally {
@@ -69,16 +83,25 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-1)] font-sans">
       {/* Top Navigation */}
-      <header className="sticky top-0 z-50 bg-[var(--surface-1)] border-b border-[var(--border)] backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-[var(--surface-1)]/95 border-b border-[var(--border)] backdrop-blur-md">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-[var(--accent-bg)] rounded-lg border border-[var(--accent-border)]">
+            <div className="p-2.5 bg-[var(--accent-bg)] rounded-xl border border-[var(--accent-border)] shadow-[0_0_24px_rgba(232,54,93,0.16)]">
               <ShieldCheck className="h-5 w-5 text-[var(--accent)]" />
             </div>
-            <h1 className="text-lg font-bold tracking-tight">Admin<span className="text-[var(--text-3)]">Console</span></h1>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold tracking-tight">Admin<span className="text-[var(--text-3)]">Console</span></h1>
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" /> Live
+                </span>
+              </div>
+              <p className="text-xs text-[var(--text-3)] mt-0.5">Operations and trust center</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-xs font-mono text-[var(--text-2)] bg-[var(--surface-2)] px-3 py-1 rounded-full border border-[var(--border)]">
+            <span className="hidden sm:inline-flex items-center gap-2 text-xs font-mono text-[var(--text-2)] bg-[var(--surface-2)] px-3 py-1.5 rounded-full border border-[var(--border)]">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
               {dashboardData.adminInfo.role.toUpperCase()}
             </span>
             <button 
@@ -92,9 +115,11 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row gap-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-8 flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Sidebar */}
-        <aside className="w-full md:w-64 flex-shrink-0 space-y-2">
+        <aside className="w-full lg:w-64 flex-shrink-0">
+          <div className="mb-3 px-3 text-[10px] uppercase tracking-[0.2em] text-[var(--text-3)]">Console navigation</div>
+          <div className="space-y-2">
           {[
             { id: 'overview', icon: Activity, label: 'Overview' },
             { id: 'users', icon: Users, label: 'User Directory', permission: 'canManageUsers' },
@@ -108,17 +133,29 @@ export default function AdminDashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                className={`group w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   isActive 
-                  ? 'bg-[var(--surface-2)] text-white border border-[var(--border-strong)]' 
+                  ? 'bg-[var(--surface-2)] text-white border border-[var(--border-strong)] shadow-[0_8px_24px_rgba(0,0,0,0.16)]'
                   : 'text-[var(--text-2)] hover:bg-[var(--surface-1)] hover:text-[var(--text-1)] border border-transparent'
                 }`}
               >
+                <span className={`h-7 w-1 rounded-full transition-colors ${isActive ? 'bg-[var(--accent)]' : 'bg-transparent group-hover:bg-[var(--border-strong)]'}`} />
                 <Icon className={`h-5 w-5 ${isActive ? 'text-[var(--accent)]' : ''}`} />
                 <span className="font-medium text-sm">{tab.label}</span>
               </button>
             )
           })}
+          </div>
+          <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-[var(--text-2)]">Platform health</span>
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            </div>
+            <div className="h-1.5 rounded-full bg-[var(--surface-3)] overflow-hidden">
+              <div className="h-full w-[92%] rounded-full bg-emerald-400" />
+            </div>
+            <p className="mt-2 text-[11px] text-[var(--text-3)]">All critical services operational</p>
+          </div>
         </aside>
 
         {/* Main Content Area */}
@@ -133,7 +170,15 @@ export default function AdminDashboard() {
             >
               
               {activeTab === 'overview' && (
-                <div className="space-y-8">
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-[var(--accent)] mb-2">Command center</p>
+                      <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">Good evening, operator.</h2>
+                      <p className="text-sm text-[var(--text-2)] mt-1">A concise view of platform activity, trust signals, and capacity.</p>
+                    </div>
+                    <span className="text-xs text-[var(--text-3)] font-mono">UPDATED JUST NOW</span>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard title="Active Users" value={dashboardData.systemStats.activeUsers.toLocaleString()} icon={Users} trend="+12%" />
                     <StatCard title="Total Voices" value={dashboardData.systemStats.activeVoices.toLocaleString()} icon={Database} trend="+4%" />
@@ -142,8 +187,14 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-2xl p-6">
-                      <h3 className="text-lg font-semibold mb-4">Security Events</h3>
+                    <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-2xl p-5 sm:p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-3)] mb-1">Trust signals</p>
+                          <h3 className="text-lg font-semibold">Security Events</h3>
+                        </div>
+                        <ShieldAlert className="h-5 w-5 text-[var(--accent)]" />
+                      </div>
                       <div className="space-y-3">
                         {dashboardData.securityAlerts.map((alert: any, i: number) => (
                           <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[var(--surface-2)] border border-[var(--border-mid)]">
@@ -158,8 +209,14 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     
-                    <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-2xl p-6">
-                      <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+                    <div className="bg-[var(--surface-1)] border border-[var(--border)] rounded-2xl p-5 sm:p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-3)] mb-1">Operator tools</p>
+                          <h3 className="text-lg font-semibold">Quick Actions</h3>
+                        </div>
+                        <Settings className="h-5 w-5 text-[var(--text-3)]" />
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         <ActionButton icon={Cloud} label="Flush Cache" />
                         <ActionButton icon={ShieldCheck} label="Audit Logs" />

@@ -13,6 +13,7 @@ import {
 import Input from '../../components/common/Input'
 import { useAuth } from '../../hooks/useAuth'
 import { motion } from 'framer-motion'
+import AuthSuccessOverlay from '@/components/auth/AuthSuccessOverlay'
 
 interface FormData {
   email: string
@@ -35,6 +36,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [authComplete, setAuthComplete] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const router = useRouter()
   const { signInWithGoogle, signUpWithEmail, user, loading: authLoading } = useAuth()
@@ -97,7 +99,8 @@ export default function SignupPage() {
           username: formData.username
         }))
       }
-      router.push('/dashboard')
+      setAuthComplete(true)
+      setTimeout(() => router.push('/dashboard'), 1300)
     } catch (err: any) {
       setErrors({ submit: err.message || 'Registration failed. Please try again.' })
     } finally {
@@ -143,11 +146,15 @@ export default function SignupPage() {
   useEffect(() => {
     if (user && !authLoading) {
       setIsLoading(false)
-      setTimeout(() => {
+      setAuthComplete(true)
+      const timer = setTimeout(() => {
         router.push('/dashboard')
-      }, 500)
+      }, 1300)
+      return () => clearTimeout(timer)
     }
   }, [user, authLoading, router])
+
+  if (authComplete) return <AuthSuccessOverlay mode="signup" />
 
   const getPasswordStrength = (password: string) => {
     if (password.length === 0) return { strength: 0, text: '', color: '' }

@@ -40,7 +40,7 @@ export default function PrivacyPage() {
           variants={fadeUp}
         >
           <h2 className="text-2xl font-semibold text-white mb-4">2. Handling of Biometric Data & Voice References</h2>
-          <p>Because VCaaS deals with voice data, we handle it with extreme care. <strong>Voice reference files uploaded for zero-shot cloning are stored ephemerally.</strong> They are held in memory only for the duration of the inference process on our Render-hosted GPU instances and are not permanently saved to our databases unless you explicitly opt to save them to your account's Voice Library. We do not use your personal voice references to train our foundational models.</p>
+          <p>Because VCaaS deals with voice data, we handle it with extreme care. Reference files may be held temporarily in application or worker storage while processing and may be retained when you explicitly save a voice to your account. The exact retention period depends on the workflow, deployment, operator agreement, and applicable law. We do not use customer voice references to train foundational models without a separate, explicit agreement.</p>
         </motion.section>
 
         <motion.section
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
           <p className="mb-4">We rely on carefully vetted third-party services to operate the platform:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Google Firebase:</strong> Used exclusively for secure user authentication and account management.</li>
-            <li><strong>Render:</strong> Hosts our secure backend inference APIs and processes the actual audio generation.</li>
+            <li><strong>Infrastructure and telephony partners:</strong> May provide approved hosting, media transport, or operator-network processing for enabled workflows.</li>
             <li><strong>Vercel:</strong> Hosts our frontend web application and edge network.</li>
           </ul>
           <p className="mt-4">These providers are contractually obligated to protect your data and do not have rights to use your biometric inputs for their own purposes.</p>
@@ -76,7 +76,7 @@ export default function PrivacyPage() {
           variants={fadeUp}
         >
           <h2 className="text-2xl font-semibold text-white mb-4">5. Data Retention & Deletion</h2>
-          <p>You can delete your account at any time from your settings page. Upon deletion, your email, saved voice models, and generation history are permanently purged from our active databases. Cryptographic logs of previously generated audio may be retained for security and audit purposes to trace malicious deepfakes if requested by law enforcement.</p>
+          <p>You can request deletion from your account workflow or through the privacy team. Deletion applies to active account data subject to legal, security, billing, backup, and operator-retention requirements. Some audit, provenance, or fraud-prevention records may be retained for a limited period when legally permitted or required.</p>
         </motion.section>
 
         <motion.section
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
           variants={fadeUp}
         >
           <h2 className="text-2xl font-semibold text-white mb-4">6. Security Measures</h2>
-          <p>We implement strict access controls, transport-layer security (HTTPS/TLS) for all API communications, and encrypted at-rest storage for databases. However, no internet transmission is 100% secure, and we cannot guarantee absolute security.</p>
+          <p>We use access controls, transport-layer security for API communications, encryption where supported by the deployment, audit logging, and least-privilege service boundaries. Carrier-integrated workflows also require operator controls for consent, lawful processing, media access, and retention. No transmission or system can be guaranteed perfectly secure.</p>
         </motion.section>
 
         <motion.section

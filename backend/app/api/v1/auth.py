@@ -40,7 +40,7 @@ async def get_current_user(
     token = credentials.credentials
     
     # MOCK AUTH KEY
-    if settings.DEBUG and token == "mock-token-123":
+    if settings.MOCK_AUTH_ENABLED and settings.ENVIRONMENT == "development" and token == "mock-token-123":
         user = db.query(User).filter(User.email == "demo@vcaas.com").first()
         if not user:
             # Auto-create mock user if missing

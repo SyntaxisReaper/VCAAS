@@ -26,9 +26,10 @@ Protocol:
     { "error": "message" }
 
 Authentication:
-  Supports an optional Bearer token in the WebSocket query string:
+    Supports a Bearer token in the WebSocket query string:
   ws://host/api/v1/verify/stream?token=YOUR_FIREBASE_ID_TOKEN
-  If no token is provided, the stream runs in anonymous/public mode.
+    Anonymous/public mode is available only when PUBLIC_STREAMING_ENABLED=true
+    in a development environment.
 """
 from __future__ import annotations
 
@@ -39,6 +40,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from fastapi.websockets import WebSocketState
 
 from ...services.stream_session import StreamSession
+from ...core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +58,8 @@ async def verify_stream(
     Accepts raw PCM audio frames and returns live verdict JSON on each
     speech-containing window. See module docstring for full protocol.
     """
-    await websocket.accept()
-    session = StreamSession(sample_rate=16000)
-
-    # Resolve optional identity (non-blocking — we don't gate the stream on auth)
+    # Resolve identity before accepting the stream. Anonymous access is an
+    # explicit development-only choice, not an implicit fallback.
     user_id: Optional[str] = None
     if token:
         try:
@@ -68,7 +68,16 @@ async def verify_stream(
             user_id = decoded.get("uid")
             logger.info("Streaming session opened for user %s", user_id)
         except Exception as exc:
-            logger.debug("Streaming session: could not verify token (%s) — anonymous mode", exc)
+            logger.debug("Streaming session: token verification failed (%s)", exc)
+            await websocket.close(code=1008, reason="Invalid authentication token")
+            return
+
+    if not user_id and not settings.PUBLIC_STREAMING_ENABLED:
+        await websocket.close(code=1008, reason="Authentication required")
+        return
+
+    await websocket.accept()
+    session = StreamSession(sample_rate=16000)
 
     if not user_id:
         logger.info("Streaming session opened in anonymous mode")

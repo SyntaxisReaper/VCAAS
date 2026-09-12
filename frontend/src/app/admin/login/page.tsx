@@ -122,32 +122,38 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(225,29,72,0.2),transparent_38%),#08090d] flex items-center justify-center p-4 sm:p-8">
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
       
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-red-600/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+        <div className="absolute bottom-0 left-0 w-80 h-40 bg-red-950/30 blur-3xl"></div>
       </div>
 
       <div className="relative w-full max-w-md">
         {/* Warning banner */}
-        <div className="mb-6 p-4 bg-red-600/20 border border-red-500/30 rounded-lg backdrop-blur-sm">
-          <div className="flex items-center text-red-300 text-sm">
+        <div className="mb-5 p-3.5 bg-red-500/[0.08] border border-red-400/20 rounded-xl backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-4 text-red-200 text-xs uppercase tracking-[0.12em]">
+            <div className="flex items-center min-w-0">
             <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
             <span>RESTRICTED ACCESS - Authorized Personnel Only</span>
+            </div>
+            <span className="hidden sm:inline text-[10px] text-red-300/60">SECURE ZONE</span>
           </div>
         </div>
 
-        <div className="bg-gray-800/80 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-[#15151f]/95 backdrop-blur-xl border border-white/[0.1] rounded-3xl p-6 sm:p-9 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/10 border border-red-400/30 rounded-2xl mb-4 shadow-[0_0_30px_rgba(244,63,94,0.18)]">
               <ShieldCheckIcon className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Admin Access</h1>
-            <p className="text-gray-400 text-sm">Enter your administrative credentials</p>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h1 className="text-2xl font-bold text-white">Admin Access</h1>
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
+            </div>
+            <p className="text-gray-400 text-sm">Authenticate to enter the operations console</p>
           </div>
 
           {/* Error message */}
@@ -184,7 +190,7 @@ export default function AdminLoginPage() {
                   type="text"
                   value={credentials.username}
                   onChange={(e) => setCredentials(prev => ({ ...prev, username: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-gray-700 transition-all duration-200"
+                  className="w-full pl-10 pr-4 py-3.5 bg-black/40 border border-white/[0.16] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-400 focus:bg-black/60 transition-all duration-200"
                   placeholder="Enter admin username"
                   disabled={isLoading || isLocked}
                   autoComplete="off"
@@ -205,7 +211,7 @@ export default function AdminLoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={credentials.password}
                   onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
-                  className="w-full pl-10 pr-12 py-3 bg-gray-800 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-gray-700 transition-all duration-200"
+                  className="w-full pl-10 pr-12 py-3.5 bg-black/40 border border-white/[0.16] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-400 focus:bg-black/60 transition-all duration-200"
                   placeholder="Enter admin password"
                   disabled={isLoading || isLocked}
                   autoComplete="current-password"
@@ -229,7 +235,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={isLoading || isLocked}
-              className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:scale-100 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+              className="w-full bg-red-500 hover:bg-red-400 disabled:bg-gray-600 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-[#15151f]"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -246,8 +252,8 @@ export default function AdminLoginPage() {
           </form>
 
           {/* Security notice */}
-          <div className="mt-8 p-4 bg-gray-700/30 rounded-lg border border-gray-600/30">
-            <div className="text-xs text-gray-400 text-center space-y-1">
+          <div className="mt-8 p-4 bg-black/20 rounded-xl border border-white/[0.08]">
+            <div className="text-xs text-gray-400 text-center space-y-1.5">
               <p>🔒 All access attempts are logged and monitored</p>
               <p>⚠️ Unauthorized access is strictly prohibited</p>
               <p>Session expires after 24 hours of inactivity</p>
@@ -260,7 +266,7 @@ export default function AdminLoginPage() {
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-gray-500 text-xs">
-            Voice Clone Platform Admin Panel v1.0
+            VCaaS operations console · v1.0
           </p>
         </div>
       </div>

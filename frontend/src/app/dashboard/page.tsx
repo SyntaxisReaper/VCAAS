@@ -105,7 +105,14 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen overflow-hidden pt-24 pb-12 px-4 sm:px-6 lg:px-8">
+      <motion.div
+        aria-hidden
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+        className="pointer-events-none absolute -right-40 top-16 h-96 w-96 rounded-full bg-[var(--accent)]/[0.07] blur-3xl"
+      />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -114,8 +121,11 @@ export default function DashboardPage() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 relative">
             <div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" /> Session verified
+              </div>
               <h1 className="text-3xl font-bold text-[var(--text-1)] tracking-tight mb-2">
                 Welcome back! 👋
               </h1>

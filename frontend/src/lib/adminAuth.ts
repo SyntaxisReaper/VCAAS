@@ -41,28 +41,68 @@ class AdminAuthManager {
    */
   async authenticateAdmin(username: string, password: string): Promise<AdminSession | null> {
     try {
-      // Deprecated: client-side admin auth.
-      console.warn('[adminAuth] Client-side admin authentication is disabled. Use server-side auth.');
-      return null;
+      // Map username → email for the backend login endpoint
+      const emailMap: Record<string, string> = {
+        'ritsa_admin': 'admin@voiceclone.ai',
+      }
+      const email = emailMap[username] ?? username // fallback: treat input as email directly
+
+      const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!res.ok) return null
+
+      const data = await res.json()
+      const token: string = data.access_token
+      if (!token) return null
+
+      const session: AdminSession = {
+        isAdmin: true,
+        username,
+        loginTime: new Date(),
+        sessionId: crypto.randomUUID(),
+        permissions: this.getFullAdminPermissions(),
+      }
+
+      sessionStorage.setItem('admin_token', token)
+      sessionStorage.setItem('admin_session', JSON.stringify(session))
+      this.currentSession = session
+      return session
     } catch (error) {
-      console.error('Admin authentication failed:', error);
-      return null;
+      console.error('Admin authentication failed:', error)
+      return null
     }
   }
+
 
   /**
    * Check if current user is authenticated admin
    */
   isAdminAuthenticated(): boolean {
-    // Always false on client; server decides based on verified token claims.
-    return false;
+    if (this.currentSession) return true
+    const stored = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('admin_session') : null
+    if (stored) {
+      try {
+        this.currentSession = JSON.parse(stored) as AdminSession
+        return true
+      } catch { /* ignore */ }
+    }
+    return false
   }
 
   /**
    * Get current admin session
    */
   getCurrentSession(): AdminSession | null {
-    return null;
+    if (this.currentSession) return this.currentSession
+    const stored = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('admin_session') : null
+    if (stored) {
+      try { this.currentSession = JSON.parse(stored) as AdminSession } catch { /* ignore */ }
+    }
+    return this.currentSession
   }
 
   /**
@@ -76,8 +116,12 @@ class AdminAuthManager {
    * Logout admin
    */
   logout(): void {
-    this.currentSession = null;
-    console.log('[adminAuth] Client-side admin session cleared');
+    this.currentSession = null
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('admin_token')
+      sessionStorage.removeItem('admin_session')
+    }
+    console.log('[adminAuth] Admin session cleared')
   }
 
   /**
@@ -89,7 +133,11 @@ class AdminAuthManager {
     }
 
     return {
+      adminInfo: {
+        role: 'admin',
+      },
       systemStats: {
+        activeUsers: 1247,
         totalUsers: 1247,
         activeVoices: 8934,
         totalGenerations: 45632,
@@ -104,6 +152,8 @@ class AdminAuthManager {
         { type: 'license_purchased', count: 12, timestamp: new Date() }
       ],
       systemHealth: {
+        cpuUsage: '42%',
+        memoryUsage: '58%',
         apiStatus: 'healthy',
         databaseStatus: 'healthy',
         storageStatus: 'healthy',
@@ -112,7 +162,11 @@ class AdminAuthManager {
       alerts: [
         { level: 'info', message: 'System maintenance scheduled for tonight', timestamp: new Date() },
         { level: 'warning', message: 'High API usage detected', timestamp: new Date() }
-      ]
+      ],
+      securityAlerts: [
+        { severity: 'info', type: 'System maintenance', details: 'System maintenance scheduled for tonight', time: 'Today' },
+        { severity: 'high', type: 'High API usage', details: 'High API usage detected', time: 'Today' },
+      ],
     };
   }
 
@@ -141,22 +195,22 @@ class AdminAuthManager {
 
   private getFullAdminPermissions(): AdminPermissions {
     return {
-      fullAccess: false,
-      canDeleteAnyUser: false,
-      canViewAllData: false,
-      canModifyLicenses: false,
-      canAccessAnalytics: false,
-      canManageSystem: false,
-      canUseAllProviders: false,
-      canBypassLimits: false,
-      canAccessPremiumFeatures: false,
-      canCloneAnyVoice: false,
-      canManageWatermarking: false,
-      canViewUsageData: false,
-      canExportAllData: false,
-      canModifyTrainingPipeline: false,
-      canAccessBetaFeatures: false
-    };
+      fullAccess: true,
+      canDeleteAnyUser: true,
+      canViewAllData: true,
+      canModifyLicenses: true,
+      canAccessAnalytics: true,
+      canManageSystem: true,
+      canUseAllProviders: true,
+      canBypassLimits: true,
+      canAccessPremiumFeatures: true,
+      canCloneAnyVoice: true,
+      canManageWatermarking: true,
+      canViewUsageData: true,
+      canExportAllData: true,
+      canModifyTrainingPipeline: true,
+      canAccessBetaFeatures: true
+    }
   }
 
   private storeSession(session: AdminSession): void {

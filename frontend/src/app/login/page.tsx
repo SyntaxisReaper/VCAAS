@@ -7,6 +7,7 @@ import { Eye, EyeOff, AlertCircle, Lock } from 'lucide-react'
 import Input from '../../components/common/Input'
 import { useAuth } from '@/hooks/useAuth'
 import { motion } from 'framer-motion'
+import AuthSuccessOverlay from '@/components/auth/AuthSuccessOverlay'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export default function LoginPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [authComplete, setAuthComplete] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
   const { signInWithGoogle, signInWithEmail, user, loading: authLoading } = useAuth()
@@ -51,7 +53,8 @@ export default function LoginPage() {
           email: result.user?.email || formData.email,
         }))
       }
-      router.push('/dashboard')
+      setAuthComplete(true)
+      setTimeout(() => router.push('/dashboard'), 1300)
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.')
     } finally {
@@ -86,11 +89,15 @@ export default function LoginPage() {
   useEffect(() => {
     if (user && !authLoading) {
       setIsLoading(false)
-      setTimeout(() => {
+      setAuthComplete(true)
+      const timer = setTimeout(() => {
         router.push('/dashboard')
-      }, 500)
+      }, 1300)
+      return () => clearTimeout(timer)
     }
   }, [user, authLoading, router])
+
+  if (authComplete) return <AuthSuccessOverlay mode="login" />
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-12 sm:px-6 lg:px-8">

@@ -65,6 +65,8 @@ export function Navbar() {
     .join('')
     .toUpperCase()
 
+  if (pathname.startsWith('/admin')) return null
+
   return (
     <>
       <header
@@ -76,9 +78,6 @@ export function Navbar() {
           {/* ── Logo ─────────────────────────────── */}
           <Link href="/" id="nav-logo" className="flex items-center gap-2 shrink-0" aria-label="VCaaS home">
             <Image src="/logo.png" alt="VCaaS" width={56} height={56} style={{ borderRadius: 8 }} priority />
-            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.025em' }}>
-              VCaaS
-            </span>
           </Link>
 
           {/* ── Desktop Nav ──────────────────────── */}
