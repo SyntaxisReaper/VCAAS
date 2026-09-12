@@ -6,7 +6,7 @@ Path: ws://host/api/v1/verify/stream
 Protocol:
   Client → Server:
     Binary frames of raw 16-bit signed PCM, mono, 16kHz.
-    Each frame should be exactly 30ms = 960 samples = 1920 bytes.
+    The recommended frame is exactly 30ms = 480 samples = 960 bytes at 16kHz.
     The client may send frames of any size; the session handles frame
     alignment internally.
 
