@@ -108,14 +108,26 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
   );
 }
 
+function getLayerScore(layer: LayerResult): number | null {
+  if (typeof layer.score === 'number') return layer.score;
+  if (typeof layer.authenticity_score === 'number') return layer.authenticity_score;
+  if (typeof layer.spoof_score === 'number') return Math.max(0, 1 - layer.spoof_score);
+  if (typeof layer.similarity_score === 'number') return layer.similarity_score;
+  if (typeof (layer as any).found === 'boolean') return (layer as any).found ? 0.0 : 1.0;
+  return null;
+}
+
 /** Mini per-layer breakdown row */
 function LayerRow({ name, layer }: { name: string; layer: LayerResult }) {
-  const score = typeof layer.score === 'number' ? layer.score : null;
+  const score = getLayerScore(layer);
   const color = score !== null ? scoreColor(score) : 'var(--text-3)';
+  const isSkipped = (layer as any).status === 'skipped';
+  const hasError = Boolean((layer as any).error);
+
   return (
     <div className="ld-layer-row">
       <span className="ld-layer-name">{name.replace(/_/g, ' ')}</span>
-      {score !== null && (
+      {score !== null && !hasError && (
         <>
           <div className="ld-layer-bar-track">
             <motion.div
@@ -129,8 +141,16 @@ function LayerRow({ name, layer }: { name: string; layer: LayerResult }) {
           <span className="ld-layer-score" style={{ color }}>{pct(score)}</span>
         </>
       )}
-      {layer.verdict && (
+      {layer.verdict && !hasError && (
         <span className="ld-layer-verdict" style={{ color: 'var(--text-2)' }}>{layer.verdict}</span>
+      )}
+      {isSkipped && (
+        <span className="ld-layer-verdict" style={{ color: 'var(--text-3)' }}>Skipped</span>
+      )}
+      {hasError && (
+        <span className="ld-layer-verdict" style={{ color: 'var(--warning)', fontSize: '0.75rem' }}>
+          {(layer as any).error?.slice(0, 30)}…
+        </span>
       )}
     </div>
   );

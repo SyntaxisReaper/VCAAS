@@ -17,11 +17,40 @@ import numpy as np
 from typing import Dict, Any
 
 
+try:
+    import torch
+    import torchaudio
+    from speechbrain.inference.interfaces import foreign_class
+    _HAS_SB = True
+except ImportError:
+    _HAS_SB = False
+    torch = None
+
+import logging
+logger = logging.getLogger(__name__)
+
 class ParalinguisticService:
     """Layer 4: Paralinguistic Coherence analyser."""
 
     def __init__(self) -> None:
-        pass
+        self._model = None
+        self._device = "cuda" if _HAS_SB and torch.cuda.is_available() else "cpu"
+        
+        if _HAS_SB:
+            try:
+                import os
+                save_dir = os.path.join(os.path.expanduser("~"), ".cache", "speechbrain", "emotion")
+                self._model = foreign_class(
+                    source="speechbrain/emotion-recognition-wav2vec2-IEMOCAP",
+                    pymodule_file="custom_interface.py",
+                    classname="CustomEncoderWav2vec2Classifier",
+                    savedir=save_dir,
+                    run_opts={"device": self._device}
+                )
+                logger.info("SpeechBrain Emotion Recognition model loaded successfully.")
+            except Exception as e:
+                logger.warning(f"Could not load SpeechBrain Emotion model: {e}. Falling back to heuristics.")
+                self._model = None
 
     def analyse(self, audio_path: str) -> Dict[str, Any]:
         """Run paralinguistic analysis on an audio file.
@@ -75,6 +104,29 @@ class ParalinguisticService:
 
 
     def _analyse_waveform(self, y: np.ndarray, sr: int) -> Dict[str, Any]:
+        # Optional: SER model inference
+        emotion_features = {}
+        if self._model is not None and _HAS_SB:
+            try:
+                # Convert to tensor and resample if needed
+                signal = torch.from_numpy(y).unsqueeze(0).to(torch.float32)
+                if sr != 16000:
+                    resampler = torchaudio.transforms.Resample(sr, 16000)
+                    signal = resampler(signal)
+                signal = signal.to(self._device)
+                
+                # Inference
+                out_prob, score, index, text_lab = self._model.classify_batch(signal)
+                emotion = text_lab[0]
+                
+                # Synthesized audio often comes out as "neu" (neutral) 
+                # highly confident neutral delivery without variation is a deepfake signal.
+                emotion_features = {
+                    "emotion": emotion,
+                    "neutral_confidence": float(out_prob[0][0].item()) # IEMOCAP labels vary, index 0 is often neu
+                }
+            except Exception as e:
+                logger.warning(f"SER inference failed: {e}")
         # 1. Arousal Variance (Energy/RMS fluctuations)
         # Humans naturally vary their volume/energy when speaking (prosodic stress).
         # TTS is often normalized and flat.
@@ -111,9 +163,10 @@ class ParalinguisticService:
             "authenticity_score": round(authenticity_score, 4),
             "arousal_variance": round(arousal_variance, 4),
             "spectral_contrast_std": round(contrast_std, 4),
-            "engine": "paralinguistic_heuristic",
+            "engine": "speechbrain_emotion" if emotion_features else "paralinguistic_heuristic",
             "details": {
                 "arousal_score": round(float(arousal_score), 4),
                 "contrast_score": round(float(contrast_score), 4),
+                **emotion_features
             }
         }

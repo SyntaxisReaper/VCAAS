@@ -45,14 +45,16 @@ class StreamSession:
 
     # How many seconds of audio to buffer (circular)
     BUFFER_SECONDS = 10
-    # Minimum seconds of audio needed before running fast-path layers
-    MIN_ANALYSIS_SECONDS = 1.0
+    # Minimum seconds of audio needed before running first analysis (3.0s)
+    MIN_ANALYSIS_SECONDS = 3.0
+    # How many samples per analysis window (3.0s)
+    WINDOW_SECONDS = 3.0
+    # Minimum interval between successive analyses (2.5s cadence)
+    CADENCE_SECONDS = 2.5
     # Minimum seconds in buffer before kicking off async watermark check
     WATERMARK_TRIGGER_SECONDS = 7
     # How many F0 values to track for running CV computation
     PITCH_HISTORY_LEN = 100
-    # How many samples per analysis window (2s)
-    WINDOW_SECONDS = 2.0
 
     def __init__(self, sample_rate: int = 16000) -> None:
         self.sample_rate = sample_rate
@@ -65,6 +67,8 @@ class StreamSession:
         # Running layer state
         self._pitch_history: deque[float] = deque(maxlen=self.PITCH_HISTORY_LEN)
         self._first_embedding: Optional[np.ndarray] = None  # for speaker consistency
+        self._last_analysis_samples: int = 0
+        self._smoothed_authenticity: Optional[float] = None
 
         # Layer service instances (one per session, not one per chunk)
         self._antispoof = AntiSpoofDetector()
@@ -118,6 +122,14 @@ class StreamSession:
         if len(self._buffer) < int(self.MIN_ANALYSIS_SECONDS * self.sample_rate):
             return None
 
+        # Stride / Cadence: ensure at least CADENCE_SECONDS has elapsed since last analysis
+        if self._last_analysis_samples > 0:
+            samples_since_last = self.total_samples_received - self._last_analysis_samples
+            if samples_since_last < int(self.CADENCE_SECONDS * self.sample_rate):
+                return None
+
+        self._last_analysis_samples = self.total_samples_received
+
         # Grab analysis window (last WINDOW_SECONDS or all available)
         window_len = min(len(self._buffer), int(self.WINDOW_SECONDS * self.sample_rate))
         window = np.array(list(self._buffer)[-window_len:], dtype=np.int16)
@@ -138,7 +150,33 @@ class StreamSession:
 
         # Score
         verdict = combine_layer_results(layer_results, weights)
-        verdict["buffer_seconds"] = round(len(self._buffer) / self.sample_rate, 2)
+
+        # Temporal smoothing (EMA): smooth score transitions across consecutive 2.5-3s windows
+        raw_score = verdict["overall_authenticity_score"]
+        watermark_found = layer_results.get("layer6_watermark", {}).get("found", False)
+        if watermark_found:
+            smoothed = 0.0
+        elif self._smoothed_authenticity is None:
+            smoothed = raw_score
+        else:
+            # 65% weight on current window, 35% on history
+            smoothed = round(0.65 * raw_score + 0.35 * self._smoothed_authenticity, 4)
+
+        self._smoothed_authenticity = smoothed
+        verdict["overall_authenticity_score"] = smoothed
+
+        if not watermark_found:
+            if smoothed > 0.8:
+                verdict["verdict"] = "Authentic (Human)"
+            elif smoothed > 0.5:
+                verdict["verdict"] = "Suspicious (Likely Human)"
+            elif smoothed > 0.2:
+                verdict["verdict"] = "Suspicious (Likely Synthetic)"
+            else:
+                verdict["verdict"] = "Deepfake (Synthetic)"
+            verdict["is_authentic"] = bool(smoothed > 0.5)
+
+        verdict["buffer_seconds"] = round(window_len / self.sample_rate, 2)
         verdict["samples_processed"] = self.total_samples_received
         return verdict
 
@@ -162,6 +200,7 @@ class StreamSession:
         try:
             antispoof = self._antispoof.detect_array(window_f32, self.sample_rate)
             auth_l1 = max(0.0, 1.0 - antispoof.get("spoof_score", 0.5))
+            antispoof["score"] = round(auth_l1, 4)
             results["layer1_antispoof"] = antispoof
             weights["l1"] = {"score": auth_l1, "weight": 0.20}
         except Exception as exc:
@@ -174,6 +213,7 @@ class StreamSession:
             # Update running pitch history for CV tracking
             if prosody.get("f0_mean_hz") is not None:
                 self._pitch_history.append(prosody["f0_mean_hz"])
+            prosody["score"] = round(auth_l3, 4)
             results["layer3_prosody"] = prosody
             weights["l3"] = {"score": auth_l3, "weight": 0.15}
         except Exception as exc:
@@ -183,6 +223,7 @@ class StreamSession:
         try:
             para = self._paralinguistic.analyse_array(window_f32, self.sample_rate)
             auth_l4 = para.get("authenticity_score", 0.5)
+            para["score"] = round(auth_l4, 4)
             results["layer4_paralinguistic"] = para
             weights["l4"] = {"score": auth_l4, "weight": 0.10}
         except Exception as exc:
@@ -278,13 +319,16 @@ class StreamSession:
     ) -> None:
         """Inject the most recent watermark and semantic results, if available."""
         if self._last_watermark_result is not None:
-            wm = self._last_watermark_result
-            layer_results["layer6_watermark"] = wm
+            wm = dict(self._last_watermark_result)
             auth_l6 = 0.0 if wm.get("found", False) else 1.0
+            wm["score"] = round(auth_l6, 4)
+            wm["verdict"] = "Watermark Detected" if wm.get("found") else "Clean"
+            layer_results["layer6_watermark"] = wm
             weights["l6"] = {"score": auth_l6, "weight": 0.20}
 
         if self._last_semantic_result is not None:
-            sem = self._last_semantic_result
-            layer_results["layer5_semantic"] = sem
+            sem = dict(self._last_semantic_result)
             auth_l5 = sem.get("authenticity_score", 0.5)
+            sem["score"] = round(auth_l5, 4)
+            layer_results["layer5_semantic"] = sem
             weights["l5"] = {"score": auth_l5, "weight": 0.20}

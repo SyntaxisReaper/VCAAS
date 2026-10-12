@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
     DEBUG: bool = Field(default=False, env="DEBUG")
     MOCK_AUTH_ENABLED: bool = Field(default=False, env="MOCK_AUTH_ENABLED")
-    PUBLIC_STREAMING_ENABLED: bool = Field(default=True, env="PUBLIC_STREAMING_ENABLED")
+    PUBLIC_STREAMING_ENABLED: bool = Field(default=False, env="PUBLIC_STREAMING_ENABLED")
     
     # API Configuration
     API_V1_STR: str = "/api"

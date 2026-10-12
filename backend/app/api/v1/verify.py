@@ -345,6 +345,7 @@ async def full_analysis(
             antispoof = AntiSpoofDetector().detect(sample_path)
             # detect() returns spoof_score, we want authenticity
             auth_l1 = max(0.0, 1.0 - antispoof.get("spoof_score", 0.5))
+            antispoof["score"] = round(auth_l1, 4)
             results["layer1_antispoof"] = antispoof
             weights["l1"] = {"score": auth_l1, "weight": 0.20}
         except Exception as e:
@@ -355,6 +356,7 @@ async def full_analysis(
             try:
                 spk_verify = SpeakerVerifier().verify(ref_path, sample_path)
                 auth_l2 = spk_verify.get("similarity_score", 0.0)
+                spk_verify["score"] = round(auth_l2, 4)
                 results["layer2_speaker"] = spk_verify
                 weights["l2"] = {"score": auth_l2, "weight": 0.15}
             except Exception as e:
@@ -366,6 +368,7 @@ async def full_analysis(
         try:
             prosody = ProsodyService().analyse(sample_path)
             auth_l3 = prosody.get("authenticity_score", 0.5)
+            prosody["score"] = round(auth_l3, 4)
             results["layer3_prosody"] = prosody
             weights["l3"] = {"score": auth_l3, "weight": 0.15}
         except Exception as e:
@@ -375,6 +378,7 @@ async def full_analysis(
         try:
             paralinguistic = ParalinguisticService().analyse(sample_path)
             auth_l4 = paralinguistic.get("authenticity_score", 0.5)
+            paralinguistic["score"] = round(auth_l4, 4)
             results["layer4_paralinguistic"] = paralinguistic
             weights["l4"] = {"score": auth_l4, "weight": 0.10}
         except Exception as e:
@@ -384,6 +388,7 @@ async def full_analysis(
         try:
             semantic = SemanticService().analyse(sample_path)
             auth_l5 = semantic.get("authenticity_score", 0.5)
+            semantic["score"] = round(auth_l5, 4)
             results["layer5_semantic"] = semantic
             weights["l5"] = {"score": auth_l5, "weight": 0.20}
         except Exception as e:
@@ -392,10 +397,12 @@ async def full_analysis(
         # Layer 6: Watermark
         try:
             watermark = await WatermarkService().detect_watermark(sample_path, method=None)
-            results["layer6_watermark"] = watermark
             # Watermark found = synthetic (authenticity = 0.0)
             # Not found = authentic (authenticity = 1.0)
             auth_l6 = 0.0 if watermark.get("found", False) else 1.0
+            watermark["score"] = round(auth_l6, 4)
+            watermark["verdict"] = "Watermark Detected" if watermark.get("found") else "Clean"
+            results["layer6_watermark"] = watermark
             weights["l6"] = {"score": auth_l6, "weight": 0.20}
         except Exception as e:
             results["layer6_watermark"] = {"error": str(e)}
