@@ -11,12 +11,7 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
   },
-  output: 'standalone',
-  experimental: {
-    turbo: {
-      root: __dirname,
-    },
-  },
+  output: process.env.VERCEL ? undefined : 'standalone',
 }
 
 module.exports = nextConfig
