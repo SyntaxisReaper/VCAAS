@@ -28,12 +28,10 @@ api.interceptors.request.use(
     if (authToken) {
       config.headers['Authorization'] = `Bearer ${authToken}`;
     }
-
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
   (error) => {
-    console.error('API Request Error:', error);
+    console.warn('API Request Warning:', error?.message || error);
     return Promise.reject(error);
   }
 );
@@ -44,11 +42,8 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API Response Error:', error);
-    if (error.response?.status === 500) {
-      // Handle server errors
-      console.error('Server Error:', error.response.data);
-    }
+    // Log as warning rather than console.error to avoid Turbopack dev error popups
+    console.warn('API Connection Warning:', error?.message || 'Network unreachable');
     return Promise.reject(error);
   }
 );
@@ -144,8 +139,13 @@ export const getAvailableVoices = async () => {
 };
 
 export const getTrainedVoices = async (userId = 'default') => {
-  const response = await api.get('/api/v1/voices/', { params: { user_id: userId } });
-  return response.data;
+  try {
+    const response = await api.get('/api/v1/voices/', { params: { user_id: userId } });
+    return response.data;
+  } catch (err: any) {
+    console.warn('Backend offline or voices unavailable, returning empty list:', err?.message || err);
+    return [];
+  }
 };
 
 export const deleteVoiceSample = async (voiceId: string) => {
@@ -165,8 +165,13 @@ export const generateSpeech = async (request: TTSRequest): Promise<{ id: string;
 };
 
 export const getTTSJobs = async (): Promise<TTSJob[]> => {
-  const response = await api.get('/api/v1/tts/jobs');
-  return response.data;
+  try {
+    const response = await api.get('/api/v1/tts/jobs');
+    return response.data;
+  } catch (err: any) {
+    console.warn('Backend offline or jobs unavailable, returning empty list:', err?.message || err);
+    return [];
+  }
 };
 
 export const loginUser = async (email: string, password: string) => {
@@ -266,8 +271,18 @@ export const getTrainingJobStatus = async (trainingId: string): Promise<Training
 
 // Dashboard
 export const getDashboardStats = async () => {
-  const response = await api.get('/api/v1/tts/stats');
-  return response.data;
+  try {
+    const response = await api.get('/api/v1/tts/stats');
+    return response.data;
+  } catch (err: any) {
+    console.warn('Backend offline or stats unavailable, using defaults:', err?.message || err);
+    return {
+      total_voices: 0,
+      total_generations: 0,
+      api_calls: 0,
+      storage_used_mb: 0,
+    };
+  }
 };
 
 // Security Reports

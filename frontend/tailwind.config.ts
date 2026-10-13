@@ -10,10 +10,33 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ── New Dark Theme ──────────────────────────────
-        accent: '#e8365d',
-        'accent-dim': 'rgba(232, 54, 93, 0.08)',
-        'accent-border': 'rgba(232, 54, 93, 0.25)',
+        // ── Brand 3-Color System (60-30-10) ──────────────
+        'brand-bg':     '#FFFFFF',
+        'brand-text':   '#0F172A',
+        'brand-slate':  '#0F172A',
+        'brand-accent': '#F59E0B',
+        'brand-muted':  '#64748B',
+        'brand-border': '#E2E8F0',
+        accent: {
+          DEFAULT: '#F59E0B',
+          hover:   '#D97706',
+          dim:     'rgba(245, 158, 11, 0.12)',
+          border:  'rgba(245, 158, 11, 0.35)',
+        },
+        'accent-dim': 'rgba(245, 158, 11, 0.12)',
+        'accent-border': 'rgba(245, 158, 11, 0.35)',
+        slate: {
+          900: '#0F172A',
+          800: '#1E293B',
+          700: '#334155',
+          600: '#475569',
+          500: '#64748B',
+          400: '#94A3B8',
+          300: '#CBD5E1',
+          200: '#E2E8F0',
+          100: '#F1F5F9',
+          50:  '#F8FAFC',
+        },
         dark: {
           0:   '#000000',
           50:  '#f4f4f5',
@@ -58,6 +81,7 @@ const config: Config = {
       },
 
       fontFamily: {
+        space:  ['Space Grotesk', 'system-ui', 'sans-serif'],
         inter:  ['Inter', 'system-ui', 'sans-serif'],
         sans:   ['Inter', 'system-ui', 'sans-serif'],
         mono:   ['JetBrains Mono', 'Fira Code', 'monospace'],

@@ -53,17 +53,17 @@ const FEATURES = [
   },
   {
     icon: AudioLines,
-    title: '6-Layer Watermarking',
+    title: 'Deepfake Detection',
     description:
-      'HMAC-signed echo-hiding embeds invisible watermarks that survive compression. Deepfake detection at the acoustic level.',
+      'Six independent layers — acoustic artifacts, biometrics, prosody, emotion coherence, behavioral, and cryptographic — combine into one risk verdict.',
     tag: 'Security',
   },
   {
-    icon: Code2,
-    title: 'Developer API',
+    icon: Zap,
+    title: 'Real-Time Verification',
     description:
-      'REST API with async job queue. Sub-2s generation, WebSocket streaming, and SDK support for Python and JavaScript.',
-    tag: 'API',
+      'Stream live audio over WebSocket. Get a continuously updating authenticity score while the conversation is still happening — before decisions are made.',
+    tag: 'Real-Time',
   },
 ]
 
@@ -155,37 +155,40 @@ function AnimSection({
 function WaveformVisualizer() {
   return (
     <div
-      className="flex items-center justify-center gap-[3px]"
-      style={{ height: 96, userSelect: 'none' }}
+      className="flex items-center justify-center gap-[3px] py-2"
+      style={{ height: 100, userSelect: 'none' }}
       aria-hidden="true"
     >
-      {WAVE_BARS.map((bar, i) => (
-        <motion.div
-          key={i}
-          style={{
-            width: 2,
-            borderRadius: 99,
-            background: 'var(--accent)',
-            originY: 1,
-          }}
-          animate={{
-            height: [bar.height * 0.18, bar.height, bar.height * 0.18],
-            opacity: [0.25, 0.75, 0.25],
-          }}
-          transition={{
-            duration: bar.duration,
-            repeat: Infinity,
-            delay: bar.delay,
-            ease: 'easeInOut',
-          }}
-        />
-      ))}
+      {WAVE_BARS.map((bar, i) => {
+        const isAccent = i % 8 === 0
+        return (
+          <motion.div
+            key={i}
+            style={{
+              width: 2.5,
+              borderRadius: 99,
+              background: isAccent ? '#F59E0B' : '#0F172A',
+              originY: 1,
+            }}
+            animate={{
+              height: [bar.height * 0.2, bar.height, bar.height * 0.2],
+              opacity: isAccent ? [0.6, 1, 0.6] : [0.35, 0.85, 0.35],
+            }}
+            transition={{
+              duration: bar.duration,
+              repeat: Infinity,
+              delay: bar.delay,
+              ease: 'easeInOut',
+            }}
+          />
+        )
+      })}
     </div>
   )
 }
 
 /* ─────────────────────────────────────────────────
-   Feature Card
+   Feature Card (Dark High-Contrast Card)
    ───────────────────────────────────────────────── */
 function FeatureCard({
   feature,
@@ -199,45 +202,62 @@ function FeatureCard({
     <motion.div
       variants={fadeUp}
       custom={index}
-      className="surface-card p-6 flex flex-col gap-4 group cursor-default"
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      className="dark-feature-card flex flex-col cursor-default"
+      whileHover={{ y: -3, transition: { duration: 0.18 } }}
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between mb-3.5">
         <div
           style={{
-            width: 40, height: 40,
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--accent-bg)',
-            border: '1px solid var(--accent-border)',
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            background: 'rgba(245, 158, 11, 0.12)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}
         >
-          <Icon size={18} style={{ color: 'var(--accent)' }} />
+          <Icon size={19} style={{ color: '#F59E0B' }} />
         </div>
-        <span className="badge badge-neutral" style={{ fontSize: 11 }}>
+        <span
+          style={{
+            fontSize: 10.5,
+            fontWeight: 500,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+            color: '#F59E0B',
+            background: 'rgba(245, 158, 11, 0.1)',
+            padding: '2px 8px',
+            borderRadius: 9999,
+          }}
+        >
           {feature.tag}
         </span>
       </div>
 
-      <div>
-        <h3
-          style={{
-            fontSize: 15,
-            fontWeight: 600,
-            color: 'var(--text-1)',
-            letterSpacing: '-0.015em',
-            marginBottom: 6,
-          }}
-        >
-          {feature.title}
-        </h3>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6 }}>
-          {feature.description}
-        </p>
-      </div>
+      <h3
+        style={{
+          fontFamily: 'Space Grotesk, sans-serif',
+          fontSize: 18,
+          fontWeight: 600,
+          color: '#FFFFFF',
+          lineHeight: 1.25,
+          marginBottom: 6,
+        }}
+      >
+        {feature.title}
+      </h3>
+      <p
+        style={{
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 13,
+          color: '#94A3B8',
+          lineHeight: 1.5,
+        }}
+      >
+        {feature.description}
+      </p>
     </motion.div>
   )
 }
@@ -268,9 +288,9 @@ function StepCard({
             position: 'absolute',
             left: 19,
             top: 48,
-            bottom: -32,
-            width: 1,
-            background: 'var(--border)',
+            bottom: -28,
+            width: 1.5,
+            background: '#E2E8F0',
           }}
         />
       )}
@@ -279,36 +299,36 @@ function StepCard({
       <div
         style={{
           width: 40, height: 40,
-          borderRadius: 'var(--radius-md)',
-          background: 'var(--surface-2)',
-          border: '1px solid var(--border-mid)',
+          borderRadius: 10,
+          background: '#F8FAFC',
+          border: '1.5px solid #0F172A',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
           fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 600,
-          color: 'var(--text-3)',
-          letterSpacing: '0.05em',
+          color: '#0F172A',
         }}
       >
         {step.n}
       </div>
 
-      <div style={{ paddingTop: 8, paddingBottom: 32 }}>
+      <div style={{ paddingTop: 6, paddingBottom: 28 }}>
         <h3
           style={{
-            fontSize: 16,
+            fontFamily: 'Space Grotesk, sans-serif',
+            fontSize: 18,
             fontWeight: 600,
-            color: 'var(--text-1)',
+            color: '#0F172A',
             letterSpacing: '-0.015em',
             marginBottom: 6,
           }}
         >
           {step.title}
         </h3>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.65 }}>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#64748B', lineHeight: 1.6 }}>
           {step.desc}
         </p>
       </div>
@@ -327,8 +347,8 @@ function CodeSnippet() {
     { t: 'code',    v: 'client = vcaas.Client(api_key="sk-...")' },
     { t: 'blank',   v: '' },
     { t: 'code',    v: 'audio = client.tts.synthesize(' },
-    { t: 'param',   v: '  voice_id = "voice_rkmishra",' },
-    { t: 'param',   v: '  text     = "Hello, world.",' },
+    { t: 'param',   v: '  voice_id = "voice_creator_01",' },
+    { t: 'param',   v: '  text     = "Voice Identity, Secured & Monetized.",' },
     { t: 'param',   v: '  watermark= True,' },
     { t: 'code',    v: ')' },
     { t: 'blank',   v: '' },
@@ -336,43 +356,47 @@ function CodeSnippet() {
   ]
 
   const colorMap: Record<string, string> = {
-    comment: 'var(--text-3)',
-    import:  '#7dd3fc',
-    code:    'var(--text-1)',
-    param:   '#86efac',
+    comment: '#64748B',
+    import:  '#F59E0B',
+    code:    '#F8FAFC',
+    param:   '#CBD5E1',
     blank:   'transparent',
   }
 
   return (
-    <div className="code-block">
+    <div
+      style={{
+        background: '#0F172A',
+        border: '1.5px solid #1E293B',
+        borderRadius: 16,
+        padding: 24,
+        boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)',
+      }}
+    >
       {/* Dot decorations */}
       <div
-        className="flex gap-1.5 mb-4"
+        className="flex gap-2 mb-4"
         aria-hidden="true"
-        style={{ opacity: 0.4 }}
       >
-        {['#ff5f57','#ffbd2e','#28c840'].map(c => (
+        {['#EF4444','#F59E0B','#10B981'].map(c => (
           <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
         ))}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {lines.map((line, i) => (
-          <motion.div
+          <div
             key={i}
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 + i * 0.06, duration: 0.3 }}
             style={{
               fontFamily: 'JetBrains Mono, monospace',
               fontSize: 13,
-              lineHeight: 1.7,
-              color: colorMap[line.t] ?? 'var(--text-1)',
-              minHeight: 22,
+              lineHeight: 1.6,
+              color: colorMap[line.t] ?? '#F8FAFC',
+              minHeight: line.v ? undefined : 14,
             }}
           >
             {line.v}
-          </motion.div>
+          </div>
         ))}
       </div>
     </div>
@@ -446,18 +470,19 @@ export default function HomePage() {
             animate="visible"
             custom={1}
             style={{
-              fontSize: 'clamp(40px, 6vw, 72px)',
-              fontWeight: 700,
-              letterSpacing: '-0.04em',
-              lineHeight: 1.08,
-              color: 'var(--text-1)',
-              maxWidth: 760,
-              marginBottom: 24,
+              fontFamily: 'Space Grotesk, sans-serif',
+              fontSize: 'clamp(44px, 5.5vw, 64px)',
+              fontWeight: 600,
+              letterSpacing: '-0.025em',
+              lineHeight: 1.1,
+              color: '#0F172A',
+              maxWidth: 820,
+              marginBottom: 20,
             }}
           >
-            Voice cloning for<br />
-            the{' '}
-            <span className="text-gradient-accent">serious creator.</span>
+            Voice Identity,{' '}
+            <span style={{ color: '#F59E0B' }}>Secured</span> and<br />
+            <span style={{ color: '#F59E0B' }}>Monetized</span>
           </motion.h1>
 
           {/* Subheadline */}
@@ -467,15 +492,15 @@ export default function HomePage() {
             animate="visible"
             custom={2}
             style={{
-              fontSize: 'clamp(16px, 2vw, 19px)',
-              color: 'var(--text-2)',
-              maxWidth: 520,
-              lineHeight: 1.65,
-              marginBottom: 40,
+              fontFamily: 'Inter, sans-serif',
+              fontSize: 'clamp(17px, 2vw, 19px)',
+              color: '#475569',
+              maxWidth: 640,
+              lineHeight: 1.6,
+              marginBottom: 36,
             }}
           >
-            Professional voice synthesis with ethical licensing,
-            invisible watermarking, and a developer-first API.
+            The first Voice Clone As A Service (VCaaS) infrastructure providing high-fidelity synthesis, cryptographic watermarking, and automated royalty licensing.
           </motion.p>
 
           {/* CTAs */}
@@ -484,25 +509,38 @@ export default function HomePage() {
             initial="hidden"
             animate="visible"
             custom={3}
-            className="flex flex-col sm:flex-row gap-3 mb-16"
+            className="flex flex-col sm:flex-row gap-4 mb-8"
           >
             <Link
-              href="/signup"
-              id="hero-cta-primary"
-              className="btn btn-primary"
-              style={{ padding: '12px 24px', fontSize: 15 }}
+              href="/docs"
+              id="hero-cta-docs"
+              className="btn btn-secondary"
+              style={{
+                padding: '12px 28px',
+                fontSize: 15,
+                fontWeight: 500,
+                borderRadius: 9999,
+                border: '1.5px solid #0F172A',
+                color: '#0F172A',
+                background: 'transparent',
+              }}
             >
-              Start Building
-              <ArrowRight size={16} />
+              Read Documentation
             </Link>
             <Link
               href="/playground"
-              id="hero-cta-demo"
-              className="btn btn-secondary"
-              style={{ padding: '12px 24px', fontSize: 15 }}
+              id="hero-cta-sandbox"
+              className="btn btn-primary"
+              style={{
+                padding: '12px 28px',
+                fontSize: 15,
+                fontWeight: 500,
+                borderRadius: 9999,
+                background: '#F59E0B',
+                color: '#0F172A',
+              }}
             >
-              <Play size={15} style={{ fill: 'currentColor' }} />
-              Try Playground
+              Initialize Sandbox
             </Link>
           </motion.div>
 
@@ -512,46 +550,10 @@ export default function HomePage() {
             initial="hidden"
             animate="visible"
             custom={4}
-            style={{ width: '100%', maxWidth: 600 }}
+            style={{ width: '100%', maxWidth: 640, marginBottom: 16 }}
           >
             <WaveformVisualizer />
-            <p
-              style={{
-                fontSize: 12,
-                color: 'var(--text-3)',
-                marginTop: 10,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-              }}
-            >
-              Live waveform preview
-            </p>
           </motion.div>
-        </motion.div>
-
-        {/* Scroll cue */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2, duration: 0.6 }}
-          style={{
-            position: 'absolute',
-            bottom: 32,
-            left: '50%',
-            transform: 'translateX(-50%)',
-          }}
-          aria-hidden="true"
-        >
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              width: 1,
-              height: 40,
-              background: 'linear-gradient(to bottom, var(--border-mid), transparent)',
-              margin: '0 auto',
-            }}
-          />
         </motion.div>
       </section>
 
@@ -561,16 +563,16 @@ export default function HomePage() {
       <AnimSection>
         <div
           className="container"
-          style={{ paddingTop: 0, paddingBottom: 80 }}
+          style={{ paddingTop: 10, paddingBottom: 80 }}
         >
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-              gap: 1,
-              background: 'var(--border)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: 0,
+              background: '#FFFFFF',
+              border: '1.5px solid #0F172A',
+              borderRadius: '8px',
               overflow: 'hidden',
             }}
           >
@@ -580,24 +582,33 @@ export default function HomePage() {
                 variants={fadeUp}
                 custom={i}
                 style={{
-                  background: 'var(--bg)',
-                  padding: '28px 24px',
+                  background: '#FFFFFF',
+                  padding: '24px 20px',
                   textAlign: 'center',
+                  borderRight: i < STATS.length - 1 ? '1.5px solid #0F172A' : 'none',
                 }}
               >
                 <div
                   style={{
-                    fontSize: 28,
-                    fontWeight: 700,
-                    letterSpacing: '-0.03em',
-                    color: 'var(--text-1)',
-                    lineHeight: 1,
+                    fontFamily: 'Space Grotesk, sans-serif',
+                    fontSize: 'clamp(30px, 3.2vw, 38px)',
+                    fontWeight: 600,
+                    letterSpacing: '-0.02em',
+                    color: '#0F172A',
+                    lineHeight: 1.1,
                     marginBottom: 6,
                   }}
                 >
                   {stat.value}
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--text-3)', letterSpacing: '0.02em' }}>
+                <div
+                  style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: 14,
+                    color: '#64748B',
+                    fontWeight: 400,
+                  }}
+                >
                   {stat.label}
                 </div>
               </motion.div>
@@ -614,36 +625,30 @@ export default function HomePage() {
           {/* Section header */}
           <motion.div
             variants={fadeUp}
-            className="mb-12"
-            style={{ maxWidth: 480 }}
+            className="mb-14 text-center max-w-xl mx-auto"
           >
-            <p
+            <h2
               style={{
-                fontSize: 12,
-                fontWeight: 500,
-                color: 'var(--accent)',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
+                fontFamily: 'Space Grotesk, sans-serif',
+                fontSize: 'clamp(32px, 4vw, 42px)',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                color: '#0F172A',
+                lineHeight: 1.15,
                 marginBottom: 12,
               }}
             >
-              Platform
-            </p>
-            <h2
+              Everything you need to build with voice
+            </h2>
+            <p
               style={{
-                fontSize: 'clamp(28px, 4vw, 40px)',
-                fontWeight: 700,
-                letterSpacing: '-0.03em',
-                color: 'var(--text-1)',
-                lineHeight: 1.15,
-                marginBottom: 14,
+                fontFamily: 'Inter, sans-serif',
+                fontSize: 16,
+                color: '#64748B',
+                lineHeight: 1.6,
               }}
             >
-              Everything you need to build with voice.
-            </h2>
-            <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.65 }}>
-              VCaaS gives you the complete stack — from training to deployment —
-              with legal guardrails built in from day one.
+              A complete, unified infrastructure for voice synthesis, verified provenance, and creator licensing.
             </p>
           </motion.div>
 
@@ -652,7 +657,7 @@ export default function HomePage() {
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-              gap: 12,
+              gap: 20,
             }}
           >
             {FEATURES.map((f, i) => (
@@ -741,10 +746,11 @@ export default function HomePage() {
         <div className="container" style={{ paddingBottom: 100 }}>
           <div
             style={{
-              background: 'var(--surface-1)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-xl)',
+              background: '#FFFFFF',
+              border: '1.5px solid #E2E8F0',
+              borderRadius: 20,
               padding: 'clamp(32px, 5vw, 56px)',
+              boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
             }}
           >
             <div
@@ -759,29 +765,31 @@ export default function HomePage() {
               <motion.div variants={fadeUp} custom={0}>
                 <p
                   style={{
+                    fontFamily: 'Inter, sans-serif',
                     fontSize: 12,
                     fontWeight: 500,
-                    color: 'var(--accent)',
-                    letterSpacing: '0.1em',
+                    color: '#F59E0B',
+                    letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    marginBottom: 12,
+                    marginBottom: 10,
                   }}
                 >
                   Built to trust
                 </p>
                 <h2
                   style={{
-                    fontSize: 'clamp(24px, 3vw, 34px)',
-                    fontWeight: 700,
-                    letterSpacing: '-0.03em',
-                    color: 'var(--text-1)',
+                    fontFamily: 'Space Grotesk, sans-serif',
+                    fontSize: 'clamp(26px, 3.2vw, 36px)',
+                    fontWeight: 600,
+                    letterSpacing: '-0.02em',
+                    color: '#0F172A',
                     lineHeight: 1.2,
                     marginBottom: 14,
                   }}
                 >
                   Transparent, open, creator-first.
                 </h2>
-                <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.7 }}>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 15, color: '#64748B', lineHeight: 1.7 }}>
                   We believe voice ownership belongs to the creator. Every feature
                   in VCaaS is designed to protect that.
                 </p>
@@ -794,7 +802,7 @@ export default function HomePage() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
-                  gap: 10,
+                  gap: 12,
                 }}
               >
                 {TRUSTED_FEATURES.map((item, i) => (
@@ -805,24 +813,25 @@ export default function HomePage() {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 8,
-                      fontSize: 13,
-                      color: 'var(--text-2)',
+                      gap: 10,
+                      fontFamily: 'Inter, sans-serif',
+                      fontSize: 14,
+                      color: '#475569',
                     }}
                   >
                     <span
                       style={{
-                        width: 18, height: 18,
+                        width: 20, height: 20,
                         borderRadius: '50%',
-                        background: 'var(--accent-bg)',
-                        border: '1px solid var(--accent-border)',
+                        background: 'rgba(245, 158, 11, 0.15)',
+                        border: '1px solid rgba(245, 158, 11, 0.35)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
                       }}
                     >
-                      <Check size={10} color="var(--accent)" strokeWidth={2.5} />
+                      <Check size={11} color="#F59E0B" strokeWidth={2.5} />
                     </span>
                     {item}
                   </motion.div>
@@ -841,15 +850,16 @@ export default function HomePage() {
           <motion.div
             variants={fadeUp}
             custom={0}
-            style={{ textAlign: 'center', maxWidth: 540, margin: '0 auto' }}
+            style={{ textAlign: 'center', maxWidth: 580, margin: '0 auto' }}
           >
             <h2
               style={{
-                fontSize: 'clamp(28px, 4vw, 44px)',
-                fontWeight: 700,
-                letterSpacing: '-0.035em',
-                color: 'var(--text-1)',
-                lineHeight: 1.1,
+                fontFamily: 'Space Grotesk, sans-serif',
+                fontSize: 'clamp(30px, 4vw, 44px)',
+                fontWeight: 600,
+                letterSpacing: '-0.025em',
+                color: '#0F172A',
+                lineHeight: 1.15,
                 marginBottom: 16,
               }}
             >
@@ -857,22 +867,30 @@ export default function HomePage() {
             </h2>
             <p
               style={{
+                fontFamily: 'Inter, sans-serif',
                 fontSize: 16,
-                color: 'var(--text-2)',
+                color: '#64748B',
                 lineHeight: 1.65,
                 marginBottom: 36,
               }}
             >
-              Start with a free account. No credit card required.
+              Start with a free sandbox account. No credit card required.
               Your first voice model is on us.
             </p>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link
                 href="/signup"
                 id="footer-cta-primary"
                 className="btn btn-primary"
-                style={{ padding: '13px 28px', fontSize: 15 }}
+                style={{
+                  padding: '13px 28px',
+                  fontSize: 15,
+                  fontWeight: 500,
+                  borderRadius: 9999,
+                  background: '#F59E0B',
+                  color: '#0F172A',
+                }}
               >
                 Create Free Account
                 <ArrowRight size={16} />
@@ -881,7 +899,15 @@ export default function HomePage() {
                 href="/docs"
                 id="footer-cta-docs"
                 className="btn btn-secondary"
-                style={{ padding: '13px 28px', fontSize: 15 }}
+                style={{
+                  padding: '13px 28px',
+                  fontSize: 15,
+                  fontWeight: 500,
+                  borderRadius: 9999,
+                  border: '1.5px solid #0F172A',
+                  color: '#0F172A',
+                  background: 'transparent',
+                }}
               >
                 Read the Docs
                 <ChevronRight size={16} />

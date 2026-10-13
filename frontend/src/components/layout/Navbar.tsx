@@ -81,26 +81,26 @@ export function Navbar() {
           </Link>
 
           {/* ── Desktop Nav ──────────────────────── */}
-          <nav className="hidden md:flex items-center gap-1 flex-1" aria-label="Main navigation">
+          <nav className="hidden md:flex items-center gap-1 flex-1 ml-4" aria-label="Main navigation">
             {[...NAV_LINKS, { label: 'Profile', href: '/profile', authRequired: true }].map(({ label, href, authRequired }) => {
               if (authRequired && !isAuthenticated) return null;
               return (
                 <Link
                   key={href}
                   href={href}
-                  id={`nav-${label.toLowerCase()}`}
+                  id={`nav-${label.toLowerCase().replace(/\s+/g, '-')}`}
                   style={{
                     fontSize: 14,
-                    fontWeight: 400,
-                    color: isActive(href) ? 'var(--text-1)' : 'var(--text-2)',
+                    fontWeight: 500,
+                    color: isActive(href) ? '#0F172A' : '#475569',
                     textDecoration: 'none',
-                    padding: '6px 12px',
-                    borderRadius: 'var(--radius-sm)',
-                    background: isActive(href) ? 'var(--surface-2)' : 'transparent',
+                    padding: '8px 14px',
+                    borderRadius: 9999,
+                    background: isActive(href) ? '#F1F5F9' : 'transparent',
                     transition: 'color 150ms ease, background 150ms ease',
                   }}
-                  onMouseEnter={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = 'var(--text-1)' }}
-                  onMouseLeave={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
+                  onMouseEnter={e => { if (!isActive(href)) { (e.currentTarget as HTMLElement).style.color = '#0F172A'; (e.currentTarget as HTMLElement).style.background = '#F8FAFC'; } }}
+                  onMouseLeave={e => { if (!isActive(href)) { (e.currentTarget as HTMLElement).style.color = '#475569'; (e.currentTarget as HTMLElement).style.background = 'transparent'; } }}
                 >
                   {label}
                 </Link>
@@ -261,16 +261,32 @@ export function Navbar() {
                   href="/login"
                   id="nav-sign-in"
                   style={{
-                    fontSize: 14, fontWeight: 400, color: 'var(--text-2)',
-                    textDecoration: 'none', padding: '6px 12px',
-                    borderRadius: 'var(--radius-sm)', transition: 'color 150ms ease',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: '#0F172A',
+                    textDecoration: 'none',
+                    padding: '8px 16px',
+                    borderRadius: 9999,
+                    transition: 'color 150ms ease, background 150ms ease',
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-1)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-2)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F1F5F9' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
                 >
-                  Sign in
+                  Sign In
                 </Link>
-                <Link href="/signup" id="nav-get-started" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: 13 }}>
+                <Link
+                  href="/signup"
+                  id="nav-get-started"
+                  className="btn btn-primary"
+                  style={{
+                    padding: '8px 20px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    borderRadius: 9999,
+                    background: '#F59E0B',
+                    color: '#0F172A',
+                  }}
+                >
                   Get Started
                 </Link>
               </>
@@ -305,9 +321,10 @@ export function Navbar() {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             style={{
-              position: 'fixed', top: 60, left: 0, right: 0, zIndex: 99,
-              background: 'rgba(0,0,0,0.95)', borderBottom: '1px solid var(--border)',
-              backdropFilter: 'blur(16px)', padding: '16px',
+              position: 'fixed', top: 64, left: 0, right: 0, zIndex: 99,
+              background: '#FFFFFF', borderBottom: '1px solid #E2E8F0',
+              boxShadow: '0 12px 24px rgba(15, 23, 42, 0.08)',
+              padding: '16px',
             }}
           >
             <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
@@ -316,11 +333,11 @@ export function Navbar() {
                   key={href}
                   href={href}
                   style={{
-                    fontSize: 15, fontWeight: 400,
-                    color: isActive(href) ? 'var(--accent)' : 'var(--text-1)',
+                    fontSize: 15, fontWeight: 500,
+                    color: isActive(href) ? '#0F172A' : '#475569',
                     textDecoration: 'none', padding: '12px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    background: isActive(href) ? 'var(--accent-bg)' : 'transparent',
+                    borderRadius: '8px',
+                    background: isActive(href) ? '#F1F5F9' : 'transparent',
                     display: 'block', transition: 'background 150ms ease',
                   }}
                 >
