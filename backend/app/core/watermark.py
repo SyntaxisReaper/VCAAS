@@ -242,78 +242,76 @@ class WatermarkDecoder:
     ) -> Optional[Dict[str, Any]]:
         """
         Detect MVP watermark and extract watermark ID.
-        
-        Args:
-            audio_path: Path to audio file to analyze
-            frequency: Expected watermark frequency
-            threshold: Detection threshold
-            
-        Returns:
-            Detection results with watermark_id if found
+
+        This detector must be conservative: real human speech contains natural high-frequency
+        content and mic/room noise, so a tiny spectral peak is not enough to classify audio as
+        synthetic. Only strong, stable spectral energy around the expected watermark frequency
+        with a valid decoded ID qualifies as a positive match.
         """
         try:
-            # Load audio
             audio, sr = librosa.load(audio_path, sr=self.sample_rate)
-            
-            # Compute FFT
             fft = np.fft.fft(audio)
             freqs = np.fft.fftfreq(len(audio), 1/sr)
-            
-            # Find frequency bin corresponding to watermark frequency
+
             target_bin = np.argmin(np.abs(freqs - frequency))
-            
-            # Check magnitude at watermark frequency
-            magnitude = np.abs(fft[target_bin]) / len(audio)
-            
-            if magnitude > threshold:
-                # Extract watermark ID by analyzing frequency modulation
-                watermark_id = self._decode_id_from_sine(audio, frequency)
-                
-                print(f"MVP Detection: ID={watermark_id}, Magnitude={magnitude}, Threshold={threshold}")
-                
-                return {
-                    'found': True,
-                    'watermark_id': watermark_id,
-                    'confidence': float(min(magnitude / threshold, 1.0)),
-                    'detection_method': 'mvp_sine',
-                    'frequency': float(frequency),
-                    'magnitude': float(magnitude)
-                }
-            
-            print(f"MVP Detection Failed: Magnitude {magnitude} vs Threshold {threshold}. Try lowering threshold or increasing amplitude.")
-            return {'found': False, 'confidence': 0.0}
-            
+            magnitude = float(np.abs(fft[target_bin]) / len(audio))
+
+            # Use a local median around the target bin so incidental hum/noise does not
+            # trigger a false positive on normal human speech.
+            half_window = max(5, int(len(freqs) * 0.0005))
+            start = max(0, target_bin - half_window)
+            end = min(len(freqs), target_bin + half_window + 1)
+            local_magnitudes = np.abs(fft[start:end]) / len(audio)
+            local_baseline = float(np.median(local_magnitudes)) if local_magnitudes.size else 0.0
+            detection_threshold = max(float(threshold), 50.0 * max(local_baseline, 1e-12))
+
+            if magnitude <= detection_threshold:
+                return {'found': False, 'confidence': 0.0, 'magnitude': magnitude, 'threshold': detection_threshold}
+
+            watermark_id = self._decode_id_from_sine(audio, frequency)
+            if watermark_id == 'unknown_id':
+                return {'found': False, 'confidence': 0.0, 'magnitude': magnitude, 'threshold': detection_threshold}
+
+            confidence = float(min(magnitude / max(detection_threshold, 1e-12), 1.0))
+            if confidence < 0.85:
+                return {'found': False, 'confidence': round(confidence, 4), 'magnitude': magnitude, 'threshold': detection_threshold}
+
+            print(f"MVP Detection: ID={watermark_id}, Magnitude={magnitude}, Threshold={detection_threshold}, Confidence={confidence}")
+
+            return {
+                'found': True,
+                'watermark_id': watermark_id,
+                'confidence': round(confidence, 4),
+                'detection_method': 'mvp_sine',
+                'frequency': float(frequency),
+                'magnitude': float(magnitude),
+                'threshold': float(detection_threshold)
+            }
+
         except Exception as e:
             logger.error(f"MVP watermark detection failed: {e}")
             return {'found': False, 'error': str(e)}
-    
+
     def detect_robust_watermark(self, audio_path: str) -> Optional[Dict[str, Any]]:
         """
         Detect robust spread-spectrum watermark with repetition support.
-        
-        Args:
-            audio_path: Path to audio file to analyze
-            
-        Returns:
-            Detection results with payload if found
+
+        Only return positive results when a payload survives verification and remains strong
+        enough to be credible; weak or unverified candidates are treated as absent.
         """
         try:
-            # Load audio
             audio, sr = librosa.load(audio_path, sr=self.sample_rate)
-            
-            # Extract all candidate payloads using Echo Hiding
             payloads = self._spread_spectrum_extract(audio)
-            
+
             for payload in payloads:
-                # Process each candidate through cryptographic verification
                 result = self._verify_and_parse_payload(payload)
-                if result:
+                if result and float(result.get('confidence', 0.0)) >= 0.85:
                     result['detection_method'] = 'robust_echo_hiding'
                     return result
-                    
+
             print("Robust Detection: No valid watermark found in any candidate payloads")
             return {'found': False, 'confidence': 0.0}
-            
+
         except Exception as e:
             logger.error(f"Robust watermark detection failed: {e}")
             return {'found': False, 'error': str(e)}
@@ -597,4 +595,4 @@ class WatermarkService:
                 import os as _os
                 _os.unlink(tmp_path)
             except Exception:
-                pass
+                pass

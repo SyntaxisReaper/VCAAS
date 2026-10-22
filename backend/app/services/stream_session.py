@@ -153,13 +153,14 @@ class StreamSession:
 
         # Temporal smoothing (EMA): smooth score transitions across consecutive 2.5-3s windows
         raw_score = verdict["overall_authenticity_score"]
+        # Watermark-positive override is only valid when detection actually succeeded.
+        # A missing or weak watermark should not be treated as a synthetic signal.
         watermark_found = layer_results.get("layer6_watermark", {}).get("found", False)
         if watermark_found:
             smoothed = 0.0
         elif self._smoothed_authenticity is None:
             smoothed = raw_score
         else:
-            # 65% weight on current window, 35% on history
             smoothed = round(0.65 * raw_score + 0.35 * self._smoothed_authenticity, 4)
 
         self._smoothed_authenticity = smoothed
@@ -168,8 +169,10 @@ class StreamSession:
         if not watermark_found:
             if smoothed > 0.8:
                 verdict["verdict"] = "Authentic (Human)"
-            elif smoothed > 0.5:
-                verdict["verdict"] = "Suspicious (Likely Human)"
+            elif smoothed > 0.6:
+                verdict["verdict"] = "Likely Human"
+            elif smoothed > 0.4:
+                verdict["verdict"] = "Unverified / Insufficient Evidence"
             elif smoothed > 0.2:
                 verdict["verdict"] = "Suspicious (Likely Synthetic)"
             else:
