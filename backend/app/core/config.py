@@ -27,16 +27,13 @@ DEFAULT_ALLOWED_ORIGINS = [
 
 
 def _parse_env_list(raw_value: str | None, fallback: list[str]) -> list[str]:
-    if not raw_value:
+    if not raw_value or not raw_value.strip():
         return list(fallback)
 
     value = raw_value.strip()
-    if not value:
-        return list(fallback)
 
     try:
         import json
-
         if value.startswith("["):
             parsed = json.loads(value)
             if isinstance(parsed, list):
@@ -47,7 +44,8 @@ def _parse_env_list(raw_value: str | None, fallback: list[str]) -> list[str]:
     items = [item.strip() for item in value.split(",") if item.strip()]
     if not items:
         return list(fallback)
-    return list(dict.fromkeys(fallback + items))
+
+    return list(dict.fromkeys(list(fallback) + items))
 
 
 class Settings(BaseSettings):
@@ -139,10 +137,19 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # Parse env lists manually so Render's comma-delimited values do not trigger
-        # a pydantic SettingsError during app startup.
-        self.ALLOWED_ORIGINS = _parse_env_list(os.getenv('ALLOWED_ORIGINS'), DEFAULT_ALLOWED_ORIGINS)
-        self.ALLOWED_HOSTS = _parse_env_list(os.getenv('ALLOWED_HOSTS'), DEFAULT_ALLOWED_HOSTS)
+        # Keep ALLOWED_ORIGINS / ALLOWED_HOSTS as runtime attributes instead of model fields,
+        # because Render and Vercel inject comma-delimited env strings and they are not valid
+        # Pydantic fields for assignment after init.
+        object.__setattr__(
+            self,
+            'ALLOWED_ORIGINS',
+            _parse_env_list(os.getenv('ALLOWED_ORIGINS'), DEFAULT_ALLOWED_ORIGINS),
+        )
+        object.__setattr__(
+            self,
+            'ALLOWED_HOSTS',
+            _parse_env_list(os.getenv('ALLOWED_HOSTS'), DEFAULT_ALLOWED_HOSTS),
+        )
 
     @model_validator(mode="after")
     def validate_security_defaults(self):
