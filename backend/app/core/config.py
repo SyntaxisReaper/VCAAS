@@ -26,6 +26,30 @@ DEFAULT_ALLOWED_ORIGINS = [
 ]
 
 
+def _parse_env_list(raw_value: str | None, fallback: list[str]) -> list[str]:
+    if not raw_value:
+        return list(fallback)
+
+    value = raw_value.strip()
+    if not value:
+        return list(fallback)
+
+    try:
+        import json
+
+        if value.startswith("["):
+            parsed = json.loads(value)
+            if isinstance(parsed, list):
+                return [str(item).strip() for item in parsed if str(item).strip()]
+    except Exception:
+        pass
+
+    items = [item.strip() for item in value.split(",") if item.strip()]
+    if not items:
+        return list(fallback)
+    return list(dict.fromkeys(fallback + items))
+
+
 class Settings(BaseSettings):
     """Application settings"""
 
@@ -86,8 +110,6 @@ class Settings(BaseSettings):
     WATERMARK_STRENGTH: float = 0.1
     WATERMARK_KEY: str = Field(default="dev-watermark-key-32-bytes-padding", env="WATERMARK_KEY")
 
-    ALLOWED_HOSTS: List[str] = Field(default_factory=lambda: DEFAULT_ALLOWED_HOSTS, env="ALLOWED_HOSTS")
-
     # Celery Configuration
     CELERY_BROKER_URL: str = Field(default="redis://localhost:6379/0", env="CELERY_BROKER_URL")
     CELERY_RESULT_BACKEND: str = Field(default="redis://localhost:6379/0", env="CELERY_RESULT_BACKEND")
@@ -117,18 +139,10 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        default_origins = list(DEFAULT_ALLOWED_ORIGINS)
-        origins_env = os.getenv('ALLOWED_ORIGINS')
-        if origins_env:
-            custom_origins = [origin.strip() for origin in origins_env.split(',') if origin.strip()]
-            object.__setattr__(self, 'ALLOWED_ORIGINS', list(dict.fromkeys(default_origins + custom_origins)))
-        else:
-            object.__setattr__(self, 'ALLOWED_ORIGINS', default_origins)
-
-        hosts_env = os.getenv('ALLOWED_HOSTS')
-        if hosts_env:
-            custom_hosts = [host.strip() for host in hosts_env.split(',') if host.strip()]
-            object.__setattr__(self, 'ALLOWED_HOSTS', list(dict.fromkeys(DEFAULT_ALLOWED_HOSTS + custom_hosts)))
+        # Parse env lists manually so Render's comma-delimited values do not trigger
+        # a pydantic SettingsError during app startup.
+        self.ALLOWED_ORIGINS = _parse_env_list(os.getenv('ALLOWED_ORIGINS'), DEFAULT_ALLOWED_ORIGINS)
+        self.ALLOWED_HOSTS = _parse_env_list(os.getenv('ALLOWED_HOSTS'), DEFAULT_ALLOWED_HOSTS)
 
     @model_validator(mode="after")
     def validate_security_defaults(self):
