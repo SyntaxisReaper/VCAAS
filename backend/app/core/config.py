@@ -4,30 +4,50 @@ from typing import List
 import os
 
 
+# Host allowlist is required when TrustedHostMiddleware is enabled.
+DEFAULT_ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",
+    "vcaas.onrender.com",
+    "*.onrender.com",
+]
+
+# CORS - Handled manually to avoid pydantic parsing issues.
+# Keep production origins explicitly configured and do not use '*' with credentials.
+DEFAULT_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:8000",
+    "https://vcaas-rbu8.vercel.app",
+    "https://vcaas.vercel.app",
+]
+
+
 class Settings(BaseSettings):
     """Application settings"""
-    
+
     # Environment
     ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
     DEBUG: bool = Field(default=False, env="DEBUG")
     MOCK_AUTH_ENABLED: bool = Field(default=False, env="MOCK_AUTH_ENABLED")
     PUBLIC_STREAMING_ENABLED: bool = Field(default=False, env="PUBLIC_STREAMING_ENABLED")
-    
+
     # API Configuration
     API_V1_STR: str = "/api"
     PROJECT_NAME: str = "Voice Clone Platform"
     SECRET_KEY: str = Field(default="", env="SECRET_KEY")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days
-    
-    # CORS - Handled manually to avoid pydantic parsing issues
-    
+
     # Database
     DATABASE_URL: str = Field(default="sqlite+aiosqlite:///./vcaas_dev2.db", env="DATABASE_URL")
-    
+
     # Redis
     REDIS_URL: str = Field(default="redis://localhost:6379", env="REDIS_URL")
-    
+
     # Firebase Configuration
     FIREBASE_PROJECT_ID: str = Field(default="voice-clone-platform", env="FIREBASE_PROJECT_ID")
     FIREBASE_PRIVATE_KEY_ID: str = Field(default="dummy", env="FIREBASE_PRIVATE_KEY_ID")
@@ -42,78 +62,73 @@ class Settings(BaseSettings):
         default="https://oauth2.googleapis.com/token",
         env="FIREBASE_TOKEN_URI"
     )
-    
+
     # AWS S3 Configuration
     AWS_ACCESS_KEY_ID: str = Field(default="dummy", env="AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY: str = Field(default="dummy", env="AWS_SECRET_ACCESS_KEY")
     AWS_REGION: str = Field(default="us-west-2", env="AWS_REGION")
     AWS_S3_BUCKET: str = Field(default="dummy", env="AWS_S3_BUCKET")
-    
+
     # TTS Configuration
     TTS_MODEL_PATH: str = Field(default="./models", env="TTS_MODEL_PATH")
     TTS_OUTPUT_PATH: str = Field(default="./audio", env="TTS_OUTPUT_PATH")
     MAX_AUDIO_DURATION: int = Field(default=300, env="MAX_AUDIO_DURATION")  # 5 minutes
     SUPPORTED_AUDIO_FORMATS: List[str] = ["wav", "mp3", "flac", "ogg"]
-    
+
     # Voice Processing
     SAMPLE_RATE: int = 22050
     HOP_LENGTH: int = 256
     WIN_LENGTH: int = 1024
     N_FFT: int = 1024
     N_MELS: int = 80
-    
+
     # Watermarking
     WATERMARK_STRENGTH: float = 0.1
     WATERMARK_KEY: str = Field(default="dev-watermark-key-32-bytes-padding", env="WATERMARK_KEY")
 
-    # Host allowlist is required when TrustedHostMiddleware is enabled.
-    ALLOWED_HOSTS: List[str] = Field(default_factory=lambda: ["localhost", "127.0.0.1"], env="ALLOWED_HOSTS")
-    
+    ALLOWED_HOSTS: List[str] = Field(default_factory=lambda: DEFAULT_ALLOWED_HOSTS, env="ALLOWED_HOSTS")
+
     # Celery Configuration
     CELERY_BROKER_URL: str = Field(default="redis://localhost:6379/0", env="CELERY_BROKER_URL")
     CELERY_RESULT_BACKEND: str = Field(default="redis://localhost:6379/0", env="CELERY_RESULT_BACKEND")
-    
+
     # Logging
     LOG_LEVEL: str = Field(default="INFO", env="LOG_LEVEL")
     LOG_FILE: str = Field(default="voice_clone.log", env="LOG_FILE")
-    
+
     # Security
     BCRYPT_ROUNDS: int = 12
     JWT_ALGORITHM: str = "HS256"
-    
+
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = Field(default=100, env="RATE_LIMIT_PER_MINUTE")
-    
+
     # File Upload
     MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
     UPLOAD_PATH: str = Field(default="./uploads", env="UPLOAD_PATH")
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore"
     )
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
-        # Handle ALLOWED_ORIGINS completely manually (as object attribute, not pydantic field)
-        default_origins = [
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://localhost:3001",
-            "http://127.0.0.1:3001",
-            "http://localhost:8000",
-            "https://vcaas-rbu8.vercel.app",
-            "https://vcaas.vercel.app"
-        ]
+
+        default_origins = list(DEFAULT_ALLOWED_ORIGINS)
         origins_env = os.getenv('ALLOWED_ORIGINS')
         if origins_env:
             custom_origins = [origin.strip() for origin in origins_env.split(',') if origin.strip()]
-            object.__setattr__(self, 'ALLOWED_ORIGINS', list(set(default_origins + custom_origins)))
+            object.__setattr__(self, 'ALLOWED_ORIGINS', list(dict.fromkeys(default_origins + custom_origins)))
         else:
             object.__setattr__(self, 'ALLOWED_ORIGINS', default_origins)
+
+        hosts_env = os.getenv('ALLOWED_HOSTS')
+        if hosts_env:
+            custom_hosts = [host.strip() for host in hosts_env.split(',') if host.strip()]
+            object.__setattr__(self, 'ALLOWED_HOSTS', list(dict.fromkeys(DEFAULT_ALLOWED_HOSTS + custom_hosts)))
 
     @model_validator(mode="after")
     def validate_security_defaults(self):

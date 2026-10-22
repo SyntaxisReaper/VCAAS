@@ -17,6 +17,7 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
+import { getCurrentUser } from '@/lib/firebase';
 
 /* ─── Types ──────────────────────────────────────────────────── */
 interface LayerResult {
@@ -215,8 +216,6 @@ export default function LiveDemoPage() {
       streamRef.current = stream;
 
       /* 2. Set up AudioContext + Worklet */
-      // Use the device's native rate; the worklet resamples to 16 kHz.
-      // Forcing 16 kHz can fail or be ignored on some browsers/devices.
       const audioCtx = new AudioContext();
       audioCtxRef.current = audioCtx;
       await audioCtx.audioWorklet.addModule('/pcm-processor.js');
@@ -224,8 +223,6 @@ export default function LiveDemoPage() {
 
       const source  = audioCtx.createMediaStreamSource(stream);
       const worklet = new AudioWorkletNode(audioCtx, 'pcm-processor');
-      // The worklet must be connected to a live graph to keep browsers processing it.
-      // A zero-gain sink keeps the graph silent while still driving the worklet.
       const sink = audioCtx.createGain();
       sink.gain.value = 0;
       sourceRef.current = source;
@@ -234,7 +231,24 @@ export default function LiveDemoPage() {
 
       /* 3. Open WebSocket */
       setWsState('connecting');
-      const ws = new WebSocket(WS_URL);
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        setError('Sign in with Firebase to use the live stream.');
+        setListening(false);
+        setWsState('closed');
+        return;
+      }
+
+      const token = await currentUser.getIdToken();
+      if (!token) {
+        setError('Your Firebase session is missing an ID token. Please sign in again.');
+        setListening(false);
+        setWsState('closed');
+        return;
+      }
+
+      const wsUrl = `${WS_URL}?token=${encodeURIComponent(token)}`;
+      const ws = new WebSocket(wsUrl);
       ws.binaryType = 'arraybuffer';
       wsRef.current = ws;
 
@@ -259,8 +273,10 @@ export default function LiveDemoPage() {
             return;
           }
           setLatest(data);
-          setHistory(prev => [...prev.slice(-49), data]); // keep up to 50 ticks
-        } catch {/* ignore malformed frames */}
+          setHistory(prev => [...prev.slice(-49), data]);
+        } catch {
+          // ignore malformed frames
+        }
       };
 
       /* 4. Pipe mic → worklet → WebSocket */
