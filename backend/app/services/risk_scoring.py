@@ -75,7 +75,9 @@ def combine_layer_results(
     # Clamp
     final_authenticity = float(max(0.0, min(1.0, final_authenticity)))
 
-    # Watermark override — definitive synthetic signal
+    # Watermark override — definitive synthetic signal only when a watermark is actually found.
+    # Absence of a watermark is not proof of synthetic audio and must not automatically trigger
+    # a deepfake verdict for real human speech captured without embedding.
     watermark_found = layer_results.get("layer6_watermark", {}).get("found", False)
     if watermark_found:
         final_authenticity = 0.0
@@ -85,8 +87,10 @@ def combine_layer_results(
         verdict = "Deepfake (Watermarked Synthetic)"
     elif final_authenticity > 0.8:
         verdict = "Authentic (Human)"
-    elif final_authenticity > 0.5:
-        verdict = "Suspicious (Likely Human)"
+    elif final_authenticity > 0.6:
+        verdict = "Likely Human"
+    elif final_authenticity > 0.4:
+        verdict = "Unverified / Insufficient Evidence"
     elif final_authenticity > 0.2:
         verdict = "Suspicious (Likely Synthetic)"
     else:
